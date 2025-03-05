@@ -11,13 +11,9 @@ use unicode_width::UnicodeWidthChar;
 
 pub use options::*;
 
-use crate::format_element::{BestFittingElement, LineMode, PrintMode};
-use crate::{FormatElement, GroupId, IndentStyle, PrintResult, Printed};
-
-use crate::format_element::document::Document;
-use crate::format_element::tag::Condition;
-use crate::prelude::Tag::EndFill;
-use crate::prelude::tag::{DedentMode, Tag, TagKind};
+use crate::format_element::{
+    BestFittingElement, FormatElement, LineMode, PrintMode, document::Document, tag::Tag::*, tag::*,
+};
 use crate::printer::call_stack::{
     CallStack, FitsCallStack, FitsIndentStack, IndentStack, PrintCallStack, PrintElementArgs,
     StackFrame, SuffixStack,
@@ -26,6 +22,7 @@ use crate::printer::line_suffixes::{LineSuffixEntry, LineSuffixes};
 use crate::printer::queue::{
     AllPredicate, FitsEndPredicate, FitsQueue, PrintQueue, Queue, SingleEntryPredicate,
 };
+use crate::{GroupId, IndentStyle, PrintResult, Printed};
 
 use self::call_stack::PrintIndentStack;
 
@@ -38,7 +35,10 @@ pub struct Printer<'a> {
 
 impl<'a> Printer<'a> {
     pub fn new(options: PrinterOptions) -> Self {
-        Self { options, state: PrinterState::default() }
+        Self {
+            options,
+            state: PrinterState::default(),
+        }
     }
 
     /// Prints the passed in element as well as all its content
@@ -157,7 +157,9 @@ impl<'a> Printer<'a> {
                             self.state.measured_group_fits = true;
 
                             if let Some(id) = group.id() {
-                                self.state.group_modes.insert_print_mode(id, PrintMode::Flat);
+                                self.state
+                                    .group_modes
+                                    .insert_print_mode(id, PrintMode::Flat);
                             }
 
                             // Measure to see if the group fits up on a single line. If that's the case,
@@ -166,7 +168,11 @@ impl<'a> Printer<'a> {
                             let fits = self.fits(queue, stack, indent_stack)?;
                             stack.pop(TagKind::Group)?;
 
-                            if fits { PrintMode::Flat } else { PrintMode::Expanded }
+                            if fits {
+                                PrintMode::Flat
+                            } else {
+                                PrintMode::Expanded
+                            }
                         }
                     }
                 };
@@ -225,7 +231,9 @@ impl<'a> Printer<'a> {
 
             FormatElement::Tag(StartLineSuffix) => {
                 indent_stack.push_suffix(indent_stack.indention());
-                self.state.line_suffixes.extend(args, queue.iter_content(TagKind::LineSuffix));
+                self.state
+                    .line_suffixes
+                    .extend(args, queue.iter_content(TagKind::LineSuffix));
             }
 
             FormatElement::Tag(StartVerbatim(_kind)) => {
@@ -291,7 +299,9 @@ impl<'a> Printer<'a> {
             let indent = std::mem::take(&mut self.state.pending_indent);
             let total_indent_char_count = indent.level() as usize * repeat_count as usize;
 
-            self.state.buffer.reserve(total_indent_char_count + indent.align() as usize);
+            self.state
+                .buffer
+                .reserve(total_indent_char_count + indent.align() as usize);
 
             for _ in 0..total_indent_char_count {
                 self.print_char(indent_char);
@@ -393,7 +403,12 @@ impl<'a> Printer<'a> {
             // No variant fits, take the last (most expanded) as fallback
             let most_expanded = best_fitting.most_expanded();
             queue.extend_back(most_expanded);
-            self.print_entry(queue, stack, indent_stack, args.with_print_mode(PrintMode::Expanded))
+            self.print_entry(
+                queue,
+                stack,
+                indent_stack,
+                args.with_print_mode(PrintMode::Expanded),
+            )
         }
     }
 
@@ -446,7 +461,10 @@ impl<'a> Printer<'a> {
                 // * A second time when measuring if *next-item*, *separator*, *next-next-item* fit.
                 loop {
                     // Item that fits without a following separator.
-                    if !matches!(measurer.queue.top(), Some(FormatElement::Tag(Tag::StartEntry))) {
+                    if !matches!(
+                        measurer.queue.top(),
+                        Some(FormatElement::Tag(Tag::StartEntry))
+                    ) {
                         break FillPairLayout::Flat;
                     }
 
@@ -458,7 +476,10 @@ impl<'a> Printer<'a> {
                     }
 
                     // Last item/separator pair that both fit
-                    if !matches!(measurer.queue.top(), Some(FormatElement::Tag(Tag::StartEntry))) {
+                    if !matches!(
+                        measurer.queue.top(),
+                        Some(FormatElement::Tag(Tag::StartEntry))
+                    ) {
                         break FillPairLayout::Flat;
                     }
 
@@ -509,7 +530,11 @@ impl<'a> Printer<'a> {
                     let separator_fits = measurer.fill_separator_fits(PrintMode::Expanded)?;
                     measurer.finish();
 
-                    if separator_fits { PrintMode::Flat } else { PrintMode::Expanded }
+                    if separator_fits {
+                        PrintMode::Flat
+                    } else {
+                        PrintMode::Expanded
+                    }
                 }
             };
 
@@ -625,7 +650,9 @@ impl<'a> Printer<'a> {
 
     fn print_char(&mut self, char: char) {
         if char == '\n' {
-            self.state.buffer.push_str(self.options.line_ending.as_str());
+            self.state
+                .buffer
+                .push_str(self.options.line_ending.as_str());
 
             self.state.generated_line += 1;
             self.state.generated_column = 0;
@@ -707,7 +734,9 @@ impl GroupModes {
 
     fn get_print_mode(&self, group_id: GroupId) -> Option<PrintMode> {
         let index = u32::from(group_id) as usize;
-        self.0.get(index).and_then(|option| option.as_ref().copied())
+        self.0
+            .get(index)
+            .and_then(|option| option.as_ref().copied())
     }
 
     fn unwrap_print_mode(&self, group_id: GroupId, next_element: &FormatElement) -> PrintMode {
@@ -723,7 +752,11 @@ enum Indention {
     Level(u16),
 
     /// Indent the content by n-`level`s using the indention sequence specified by the printer options and `align` spaces.
-    Align { level: u16, align: NonZeroU8, align_count: u16 },
+    Align {
+        level: u16,
+        align: NonZeroU8,
+        align_count: u16,
+    },
 }
 
 impl Indention {
@@ -763,12 +796,18 @@ impl Indention {
         match self {
             Indention::Level(count) => Indention::Level(count + 1),
             // Increase the indent AND convert the align to an indent
-            Indention::Align { level, align_count, .. } if indent_style.is_tab() => {
-                Indention::Level(level + align_count + 1)
-            }
-            Indention::Align { level: indent, align, align_count } => {
-                Indention::Align { level: indent + 1, align, align_count }
-            }
+            Indention::Align {
+                level, align_count, ..
+            } if indent_style.is_tab() => Indention::Level(level + align_count + 1),
+            Indention::Align {
+                level: indent,
+                align,
+                align_count,
+            } => Indention::Align {
+                level: indent + 1,
+                align,
+                align_count,
+            },
         }
     }
 
@@ -777,12 +816,18 @@ impl Indention {
     /// It increments the `level` value if the current value is [Indent::IndentAlign].
     fn set_align(self, count: NonZeroU8) -> Self {
         match self {
-            Indention::Level(indent_count) => {
-                Indention::Align { level: indent_count, align: count, align_count: 1 }
-            }
+            Indention::Level(indent_count) => Indention::Align {
+                level: indent_count,
+                align: count,
+                align_count: 1,
+            },
 
             // Convert the existing align to an indent
-            Indention::Align { level: indent, align, align_count } => Indention::Align {
+            Indention::Align {
+                level: indent,
+                align,
+                align_count,
+            } => Indention::Align {
                 level: indent,
                 align: align.saturating_add(count.get()),
                 align_count: align_count + 1,
@@ -840,8 +885,11 @@ impl<'a, 'print> FitsMeasurer<'a, 'print> {
         let fits_queue = FitsQueue::new(print_queue, saved_queue);
         let fits_stack = FitsCallStack::new(print_stack, saved_stack);
 
-        let fits_indent_stack =
-            FitsIndentStack::new(print_indent_stack, saved_indent_stack, saved_stack_tem_indent);
+        let fits_indent_stack = FitsIndentStack::new(
+            print_indent_stack,
+            saved_indent_stack,
+            saved_stack_tem_indent,
+        );
 
         let fits_state = FitsState {
             pending_indent: printer.state.pending_indent,
@@ -914,7 +962,8 @@ impl<'a, 'print> FitsMeasurer<'a, 'print> {
             return invalid_start_tag(TagKind::Entry, start_entry);
         }
 
-        self.stack.push(TagKind::Fill, self.stack.top().with_print_mode(mode));
+        self.stack
+            .push(TagKind::Fill, self.stack.top().with_print_mode(mode));
         let mut predicate = SingleEntryPredicate::default();
         let fits = self.fits(&mut predicate)?;
 
@@ -1059,10 +1108,14 @@ impl<'a, 'print> FitsMeasurer<'a, 'print> {
                     return Ok(Fits::No);
                 }
 
-                let group_mode =
-                    if !group.mode().is_flat() { PrintMode::Expanded } else { args.mode() };
+                let group_mode = if !group.mode().is_flat() {
+                    PrintMode::Expanded
+                } else {
+                    args.mode()
+                };
 
-                self.stack.push(TagKind::Group, args.with_print_mode(group_mode));
+                self.stack
+                    .push(TagKind::Group, args.with_print_mode(group_mode));
 
                 if let Some(id) = group.id() {
                     self.group_modes_mut().insert_print_mode(id, group_mode);
@@ -1072,9 +1125,10 @@ impl<'a, 'print> FitsMeasurer<'a, 'print> {
             FormatElement::Tag(StartConditionalContent(condition)) => {
                 let group_mode = match condition.group_id {
                     None => args.mode(),
-                    Some(group_id) => {
-                        self.group_modes().get_print_mode(group_id).unwrap_or_else(|| args.mode())
-                    }
+                    Some(group_id) => self
+                        .group_modes()
+                        .get_print_mode(group_id)
+                        .unwrap_or_else(|| args.mode()),
                 };
 
                 if group_mode != condition.mode {
@@ -1085,8 +1139,10 @@ impl<'a, 'print> FitsMeasurer<'a, 'print> {
             }
 
             FormatElement::Tag(StartIndentIfGroupBreaks(id)) => {
-                let group_mode =
-                    self.group_modes().get_print_mode(*id).unwrap_or_else(|| args.mode());
+                let group_mode = self
+                    .group_modes()
+                    .get_print_mode(*id)
+                    .unwrap_or_else(|| args.mode());
 
                 match group_mode {
                     PrintMode::Flat => {
@@ -1124,8 +1180,10 @@ impl<'a, 'print> FitsMeasurer<'a, 'print> {
                 self.stack.pop(tag.kind())?;
             }
             FormatElement::Tag(tag @ EndIndentIfGroupBreaks(group_id)) => {
-                let group_mode =
-                    self.group_modes().get_print_mode(*group_id).unwrap_or_else(|| args.mode());
+                let group_mode = self
+                    .group_modes()
+                    .get_print_mode(*group_id)
+                    .unwrap_or_else(|| args.mode());
                 if let PrintMode::Expanded = group_mode {
                     self.indent_stack.pop();
                 }

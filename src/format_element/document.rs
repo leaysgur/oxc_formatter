@@ -4,9 +4,9 @@ use std::ops::Deref;
 
 use rustc_hash::FxHashMap;
 
-use super::tag::Tag;
-use crate::FormatElement;
-use crate::prelude::*;
+use crate::format_element::FormatElement;
+use crate::format_element::elements::*;
+use crate::format_element::tag::*;
 
 /// A formatted document.
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
@@ -27,7 +27,7 @@ impl Document {
     pub(crate) fn propagate_expand(&mut self) {
         #[derive(Debug)]
         enum Enclosing<'a> {
-            Group(&'a tag::Group),
+            Group(&'a Group),
             BestFitting,
         }
 
@@ -207,7 +207,8 @@ impl FormatElements for [FormatElement] {
     }
 
     fn has_label(&self, expected: LabelId) -> bool {
-        self.first().is_some_and(|element| element.has_label(expected))
+        self.first()
+            .is_some_and(|element| element.has_label(expected))
     }
 
     fn start_tag(&self, kind: TagKind) -> Option<&Tag> {

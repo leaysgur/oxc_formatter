@@ -2,11 +2,11 @@ use std::fmt::Debug;
 use std::iter::FusedIterator;
 use std::marker::PhantomData;
 
-use crate::format_element::tag::TagKind;
-use crate::prelude::Tag;
+use crate::PrintResult;
+use crate::format_element::FormatElement;
+use crate::format_element::tag::{Tag, TagKind};
 use crate::printer::stack::{Stack, StackedStack};
 use crate::printer::{invalid_end_tag, invalid_start_tag};
-use crate::{FormatElement, PrintResult};
 
 /// Queue of [FormatElement]s.
 pub(super) trait Queue<'a> {
@@ -343,7 +343,7 @@ impl FitsEndPredicate for SingleEntryPredicate {
 mod tests {
     use crate::FormatElement;
     use crate::format_element::LineMode;
-    use crate::prelude::Tag;
+    use crate::format_element::tag::Tag;
     use crate::printer::queue::{PrintQueue, Queue};
 
     #[test]
