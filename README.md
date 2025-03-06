@@ -12,6 +12,11 @@ PoC implementation of formatter for OXC AST, based on `biome(_js)_formatter`.
 
 ## Notable diffs
 
+### /
+- builders.rs
+  - Remove all usage of `Argument(s)`
+  - Update `-> FormatResult<()>` to `-> ()`
+
 ### format_element/
 - tag.rs
   - Remove `TextSize` for `Verbatim`

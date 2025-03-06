@@ -15,7 +15,7 @@ impl<'a> Formatter<'a> {
         }
     }
 
-    fn write_element(&mut self, element: FormatElement) {
+    pub fn write_element(&mut self, element: FormatElement) {
         self.elements.push(element);
     }
 }
@@ -47,7 +47,9 @@ pub trait Format {
         // }
     }
 
-    fn fmt_fields(&self, f: &mut Formatter);
+    fn fmt_fields(&self, f: &mut Formatter) {
+        unreachable!("Should be implemented ny each node")
+    }
 
     fn needs_parentheses(&self) -> bool {
         false
