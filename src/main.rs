@@ -7,9 +7,14 @@ fn main() {
     println!("👀 Original code:");
     println!("{source_text}");
 
-    let result = format_source(source_text, source_type);
-    assert!(result.is_ok());
-
-    println!("✨ Formatted code:");
-    println!("{}", result.unwrap());
+    match format_source(source_text, source_type) {
+        Ok(formatted) => {
+            println!("✨ Formatted code:");
+            println!("{}", formatted);
+        }
+        Err(err) => {
+            eprintln!("💥 Failed to format:");
+            eprintln!("{err}");
+        }
+    };
 }
