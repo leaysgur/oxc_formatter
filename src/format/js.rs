@@ -1,8 +1,10 @@
 use oxc_ast::ast::*;
-use oxc_span::GetSpan;
+// use oxc_span::GetSpan;
 
+use crate::buffer::Buffer;
 use crate::builders::*;
-use crate::formatter::{Format, Formatter};
+use crate::format::Format;
+use crate::formatter::Formatter;
 use crate::write;
 
 impl Format for Program<'_> {
@@ -24,7 +26,7 @@ impl Format for Program<'_> {
                         f,
                         [
                             text("/* TODO */"),
-                            dynamic_text(stmt.span().source_text(f.source_text)),
+                            // dynamic_text(stmt.span().source_text(f.state().context().source_text)),
                         ]
                     );
                 }
@@ -58,7 +60,7 @@ impl Format for VariableDeclarator<'_> {
         }
 
         if let Some(init) = init {
-            write!(f, [text("=")]);
+            write!(f, [text(" = ")]);
             init.fmt(f);
         }
     }
@@ -74,7 +76,7 @@ impl Format for Expression<'_> {
                     f,
                     [
                         text("/* TODO */"),
-                        dynamic_text(self.span().source_text(f.source_text)),
+                        // dynamic_text(self.span().source_text(f.source_text)),
                     ]
                 );
             }
@@ -99,7 +101,7 @@ impl Format for ArrayExpression<'_> {
                         f,
                         [
                             text("/* TODO */"),
-                            dynamic_text(element.span().source_text(f.source_text)),
+                            // dynamic_text(element.span().source_text(f.source_text)),
                         ]
                     );
                 }

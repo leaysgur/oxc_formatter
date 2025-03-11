@@ -1,4 +1,8 @@
+mod arguments;
+mod buffer;
 mod builders;
+mod context;
+mod format;
 mod format_element;
 mod formatter;
 mod group_id;
@@ -9,14 +13,48 @@ mod printer;
 use oxc_allocator::Allocator;
 use oxc_span::SourceType;
 
+use arguments::Arguments;
+use buffer::{Buffer, VecBuffer};
+use context::FormatContext;
+use format::Format;
 use format_element::{FormatElement, document::Document};
-use formatter::{Format, Formatter};
+use formatter::Formatter;
 use group_id::GroupId;
 use options::*;
 use printer::Printer;
 
 type PrintError = String; // TODO: diagnostics
 pub type PrintResult<T> = Result<T, PrintError>;
+
+#[inline(always)]
+pub fn write(output: &mut dyn Buffer, args: Arguments) {
+    let mut f = Formatter::new(output);
+    f.write_fmt(args);
+}
+
+// ---
+
+#[derive(Debug)]
+pub struct FormatState {
+    context: FormatContext,
+}
+impl FormatState {
+    fn new(context: FormatContext) -> Self {
+        Self { context }
+    }
+
+    /// Returns the context specifying how to format the current CST
+    pub fn context(&self) -> &FormatContext {
+        &self.context
+    }
+
+    /// Returns a mutable reference to the context
+    pub fn context_mut(&mut self) -> &mut FormatContext {
+        &mut self.context
+    }
+}
+
+// ---
 
 pub struct Printed {
     code: String,
@@ -39,13 +77,17 @@ pub fn format_source(source_text: &str, source_type: SourceType) -> Result<Strin
 
     let options = FormatOptions::default();
 
-    let mut f = Formatter::new(parsed.program.source_text);
+    let context = FormatContext::new();
+    let mut state = FormatState::new(context);
+    let mut buffer = VecBuffer::new(&mut state);
+    let mut f = Formatter::new(&mut buffer);
+
     parsed.program.fmt(&mut f);
 
-    let mut document = Document::from(f.elements);
+    let mut document = Document::from(buffer.into_vec());
     document.propagate_expand();
 
-    let printer = Printer::new(options.as_print_options());
+    let printer = Printer::new(parsed.program.source_text, options.as_print_options());
     let printed = printer.print(&document)?;
     Ok(printed.code)
 }

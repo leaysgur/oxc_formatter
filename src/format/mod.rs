@@ -1,24 +1,6 @@
 mod js;
 
-use crate::format_element::FormatElement;
-
-pub struct Formatter<'a> {
-    pub elements: Vec<FormatElement>,
-    pub source_text: &'a str,
-}
-
-impl<'a> Formatter<'a> {
-    pub fn new(source_text: &'a str) -> Self {
-        Self {
-            elements: vec![],
-            source_text,
-        }
-    }
-
-    pub fn write_element(&mut self, element: FormatElement) {
-        self.elements.push(element);
-    }
-}
+use crate::formatter::Formatter;
 
 pub trait Format {
     fn fmt(&self, f: &mut Formatter) {
@@ -47,7 +29,7 @@ pub trait Format {
         // }
     }
 
-    fn fmt_fields(&self, f: &mut Formatter) {
+    fn fmt_fields(&self, _: &mut Formatter) {
         unreachable!("Should be implemented ny each node")
     }
 

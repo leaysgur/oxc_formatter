@@ -13,9 +13,15 @@ PoC implementation of formatter for OXC AST, based on `biome(_js)_formatter`.
 ## Notable diffs
 
 ### /
-- builders.rs
-  - Remove all usage of `Argument(s)`
+- arguments.rs
   - Update `-> FormatResult<()>` to `-> ()`
+  - ❗️ Remove tests
+- buffer.rs
+  - Update `-> FormatResult<()>` to `-> ()`
+  - Remove `PreambleBuffer`
+- builders.rs
+  - Update `-> FormatResult<()>` to `-> ()`
+  - Remove `SyntaxTokenCowSlice` and `LocatedTokenText` related builders
 
 ### format_element/
 - tag.rs

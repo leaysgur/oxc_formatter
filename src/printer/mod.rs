@@ -29,13 +29,15 @@ use self::call_stack::PrintIndentStack;
 /// Prints the format elements into a string
 #[derive(Debug, Default)]
 pub struct Printer<'a> {
+    source_text: &'a str,
     options: PrinterOptions,
     state: PrinterState<'a>,
 }
 
 impl<'a> Printer<'a> {
-    pub fn new(options: PrinterOptions) -> Self {
+    pub fn new(source_text: &'a str, options: PrinterOptions) -> Self {
         Self {
+            source_text,
             options,
             state: PrinterState::default(),
         }
