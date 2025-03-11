@@ -19,7 +19,7 @@ use context::FormatContext;
 use format::Format;
 use format_element::{FormatElement, document::Document};
 use formatter::Formatter;
-use group_id::GroupId;
+use group_id::{GroupId, UniqueGroupIdBuilder};
 use options::*;
 use printer::Printer;
 
@@ -34,13 +34,16 @@ pub fn write(output: &mut dyn Buffer, args: Arguments) {
 
 // ---
 
-#[derive(Debug)]
 pub struct FormatState {
     context: FormatContext,
+    group_id_builder: UniqueGroupIdBuilder,
 }
 impl FormatState {
     fn new(context: FormatContext) -> Self {
-        Self { context }
+        Self {
+            context,
+            group_id_builder: UniqueGroupIdBuilder::default(),
+        }
     }
 
     pub fn into_context(self) -> FormatContext {
@@ -55,6 +58,13 @@ impl FormatState {
     /// Returns a mutable reference to the context
     pub fn context_mut(&mut self) -> &mut FormatContext {
         &mut self.context
+    }
+
+    /// Creates a new group id that is unique to this document.
+    /// The passed debug name is used in the [std::fmt::Debug] of the document if this is a debug build.
+    /// The name is unused for production builds and has no meaning on the equality of two group ids.
+    pub fn group_id(&self, debug_name: &'static str) -> GroupId {
+        self.group_id_builder.group_id(debug_name)
     }
 }
 
@@ -84,8 +94,8 @@ pub fn format_source(source_text: &str, source_type: SourceType) -> Result<Strin
     let context = FormatContext::new(options);
     let mut state = FormatState::new(context);
     let mut buffer = VecBuffer::new(&mut state);
-    let mut f = Formatter::new(&mut buffer);
 
+    let mut f = Formatter::new(&mut buffer);
     parsed.program.fmt(&mut f);
 
     let mut document = Document::from(buffer.into_vec());
