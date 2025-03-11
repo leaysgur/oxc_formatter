@@ -68,6 +68,14 @@ impl FormatState {
     }
 }
 
+impl std::fmt::Debug for FormatState {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("FormatState")
+            .field("context", &self.context)
+            .finish()
+    }
+}
+
 // ---
 
 pub struct Printed {
