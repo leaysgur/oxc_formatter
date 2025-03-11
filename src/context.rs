@@ -3,6 +3,7 @@ use crate::options::FormatOptions;
 #[derive(Debug, Clone)]
 pub struct FormatContext {
     options: FormatOptions,
+    // TODO: Comments
 }
 
 impl FormatContext {
