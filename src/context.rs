@@ -1,8 +1,16 @@
-#[derive(Debug)]
-pub struct FormatContext {}
+use crate::options::FormatOptions;
+
+#[derive(Debug, Clone)]
+pub struct FormatContext {
+    options: FormatOptions,
+}
 
 impl FormatContext {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(options: FormatOptions) -> Self {
+        Self { options }
+    }
+
+    pub fn options(&self) -> &FormatOptions {
+        &self.options
     }
 }

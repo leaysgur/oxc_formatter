@@ -43,6 +43,10 @@ impl FormatState {
         Self { context }
     }
 
+    pub fn into_context(self) -> FormatContext {
+        self.context
+    }
+
     /// Returns the context specifying how to format the current CST
     pub fn context(&self) -> &FormatContext {
         &self.context
@@ -77,7 +81,7 @@ pub fn format_source(source_text: &str, source_type: SourceType) -> Result<Strin
 
     let options = FormatOptions::default();
 
-    let context = FormatContext::new();
+    let context = FormatContext::new(options);
     let mut state = FormatState::new(context);
     let mut buffer = VecBuffer::new(&mut state);
     let mut f = Formatter::new(&mut buffer);
@@ -87,7 +91,11 @@ pub fn format_source(source_text: &str, source_type: SourceType) -> Result<Strin
     let mut document = Document::from(buffer.into_vec());
     document.propagate_expand();
 
-    let printer = Printer::new(parsed.program.source_text, options.as_print_options());
+    let context = state.into_context();
+    let printer = Printer::new(
+        parsed.program.source_text,
+        context.options().as_print_options(),
+    );
     let printed = printer.print(&document)?;
     Ok(printed.code)
 }

@@ -2,8 +2,20 @@
 
 PoC implementation of formatter for OXC AST, based on `biome(_js)_formatter`.
 
+```
+# cargo run
+👀 Original code:
+let a, b=1;const c =   [2,3,4]   ; call()
+✨ Formatted code:
+let a, b = 1;
+const c = [2, 3, 4];
+/* TODO */
+```
+
 ## Concerns
 
+- How to interact with `source_text`?
+  - verbatim, get_lines_before, etc...
 - In Biome, each node seems to know its parent, but not in OXC
   - Should we manage `AstKind` somewhere like the current implementation?
   - Should we use existing things like `oxc_semantic` (along with `oxc_traverse` for preprocessing AST)?
