@@ -54,10 +54,10 @@ pub fn format_source(
         Parser::new(&allocator, source_text, source_type).with_options(ParseOptions::default());
     let parsed = parser.parse();
     let program = parsed.program;
-    let source_text = program.source_text;
 
     // TODO: Transform AST
 
+    // TODO: How to share `source_text` around?
     let mut state = FormatState::new(FormatContext::new(options));
     let mut buffer = VecBuffer::new(&mut state);
 
@@ -68,10 +68,7 @@ pub fn format_source(
     document.propagate_expand();
 
     // IR -> TEXT
-    let printer = Printer::new(
-        source_text,
-        state.into_context().options().as_print_options(),
-    );
+    let printer = Printer::new(state.into_context().options().as_print_options());
     let printed = printer.print(&document)?;
 
     Ok(printed)
