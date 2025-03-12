@@ -65,22 +65,6 @@ impl Format for Argument<'_> {
 /// Sequence of objects that should be formatted in the specified order.
 ///
 /// The [`format_args!`] macro will safely create an instance of this structure.
-///
-/// You can use the `Arguments<a>` that [`format_args!]` return in `Format` context as seen below.
-/// It will call the `format` function for every of it's objects.
-///
-/// ```rust
-/// use biome_formatter::prelude::*;
-/// use biome_formatter::{format, format_args};
-///
-/// # fn main() -> FormatResult<()> {
-/// let formatted = format!(SimpleFormatContext::default(), [
-///     format_args!(text("a"), space(), text("b"))
-/// ])?;
-///
-/// assert_eq!("a b", formatted.print()?.as_code());
-/// # Ok(())
-/// # }
 /// ```
 pub struct Arguments<'fmt>(pub &'fmt [Argument<'fmt>]);
 

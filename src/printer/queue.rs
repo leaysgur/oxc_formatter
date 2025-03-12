@@ -341,8 +341,7 @@ impl FitsEndPredicate for SingleEntryPredicate {
 
 #[cfg(test)]
 mod tests {
-    use crate::FormatElement;
-    use crate::format_element::LineMode;
+    use crate::format_element::{FormatElement,LineMode};
     use crate::format_element::tag::Tag;
     use crate::printer::queue::{PrintQueue, Queue};
 

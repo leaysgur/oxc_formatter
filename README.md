@@ -4,6 +4,8 @@ PoC implementation of formatter for OXC AST, based on `biome(_js)_formatter`.
 
 ```
 # cargo run
+🛠️ Format with options:
+FormatOptions { indent_style: Tab, indent_width: IndentWidth(2), line_ending: Lf, line_width: LineWidth(8), quote_style: Double, jsx_quote_style: Double, quote_properties: AsNeeded, trailing_commas: All, semicolons: Always, arrow_parentheses: Always, bracket_spacing: BracketSpacing(true), bracket_same_line: BracketSameLine(false), attribute_position: Auto, expand: Auto }
 👀 Original code:
 let a, b=1;const c =   [2,3,4]   ; call()
 ✨ Formatted code:
@@ -23,6 +25,8 @@ const c = [2, 3, 4];
   - But this introduces a lot of mechanisms to avoid Rust's Orphans rule, which may not be necessary for us?
 
 ## Notable diffs
+
+- All of doctests are not updated yet
 
 ### /
 - arguments.rs

@@ -41,13 +41,14 @@ impl Format for VariableDeclaration<'_> {
 
         for (idx, decl) in declarations.iter().enumerate() {
             if idx > 0 {
-                write!(f, [text(","), space()]);
+                let sep = format_with(|f| write!(f, [text(","), space()]));
+                write!(f, [sep]);
             }
 
             decl.fmt(f);
         }
 
-        if f.options().semicolons().is_as_needed() {
+        if f.options().semicolons().is_always() {
             write!(f, [text(";")]);
         }
     }
