@@ -18,9 +18,9 @@ const c = [2, 3, 4];
 
 - How to interact with `source_text`?
   - verbatim, get_lines_before, etc
-  - `FormatState` or `FormatContext` should keep ref, but it requires many signature changes in many places...
+  - `FormatContext` should keep ref, but it requires many signature changes in many places...
 - In Biome, each node seems to know its parent, but not in OXC
-  - Should we manage `AstKind` somewhere like the current implementation?
+  - Should we manage `AstKind` stack somewhere like the current implementation?
   - Should we use existing things like `oxc_semantic` (along with `oxc_traverse` for preprocessing AST)?
 - TBD...
 
