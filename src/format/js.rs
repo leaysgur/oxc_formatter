@@ -47,7 +47,9 @@ impl Format for VariableDeclaration<'_> {
             decl.fmt(f);
         }
 
-        write!(f, [text(";")]);
+        if f.options().semicolons().is_as_needed() {
+            write!(f, [text(";")]);
+        }
     }
 }
 

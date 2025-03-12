@@ -1,4 +1,5 @@
-use crate::FormatState;
+use crate::state::FormatState;
+use crate::options::FormatOptions;
 use crate::context::FormatContext;
 use crate::arguments::Arguments;
 use crate::buffer::{Buffer, BufferSnapshot};
@@ -16,9 +17,9 @@ impl<'a> Formatter<'a> {
 
 impl<'a> Formatter<'a> {
     /// Returns the format options
-    // pub fn options(&self) -> &Context::Options {
-    //     self.context().options()
-    // }
+    pub fn options(&self) -> &FormatOptions {
+        self.context().options()
+    }
 
     /// Returns the Context specifying how to format the current CST
     pub fn context(&self) -> &FormatContext {
