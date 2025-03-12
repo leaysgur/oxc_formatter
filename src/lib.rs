@@ -14,9 +14,10 @@ mod state;
 use oxc_allocator::Allocator;
 use oxc_span::SourceType;
 
-use arguments::{Argument, Arguments};
+use arguments::Arguments;
 use buffer::{Buffer, VecBuffer};
 use context::FormatContext;
+use format::FormatNode;
 use format_element::document::Document;
 use formatter::Formatter;
 pub use options::FormatOptions;
@@ -57,10 +58,7 @@ pub fn format_source(
     let mut buffer = VecBuffer::new(&mut state);
 
     // AST -> IR
-    write_with_formatter(
-        &mut buffer,
-        Arguments::from(&Argument::new(&parsed.program)),
-    );
+    parsed.program.fmt(&mut Formatter::new(&mut buffer));
 
     let mut document = Document::from(buffer.into_vec());
     document.propagate_expand();

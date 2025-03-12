@@ -1,13 +1,14 @@
 use oxc_ast::ast::*;
-// use oxc_span::GetSpan;
 
 use crate::buffer::Buffer;
 use crate::builders::*;
-use crate::format::Format;
+use crate::format::FormatNode;
 use crate::formatter::Formatter;
 use crate::write;
 
-impl Format for Program<'_> {
+// TODO: Split this into multiple files by node?
+
+impl FormatNode for Program<'_> {
     fn fmt_fields(&self, f: &mut Formatter) {
         let Program { body, .. } = self;
 
@@ -22,20 +23,14 @@ impl Format for Program<'_> {
                     decl.fmt(f);
                 }
                 _ => {
-                    write!(
-                        f,
-                        [
-                            text("/* TODO */"),
-                            // dynamic_text(stmt.span().source_text(f.state().context().source_text)),
-                        ]
-                    );
+                    write!(f, [text("/* TODO! */")]);
                 }
             }
         }
     }
 }
 
-impl Format for VariableDeclaration<'_> {
+impl FormatNode for VariableDeclaration<'_> {
     fn fmt_fields(&self, f: &mut Formatter) {
         let VariableDeclaration { declarations, .. } = self;
 
@@ -54,7 +49,7 @@ impl Format for VariableDeclaration<'_> {
     }
 }
 
-impl Format for VariableDeclarator<'_> {
+impl FormatNode for VariableDeclarator<'_> {
     fn fmt_fields(&self, f: &mut Formatter) {
         let VariableDeclarator { id, init, .. } = self;
 
@@ -69,26 +64,18 @@ impl Format for VariableDeclarator<'_> {
     }
 }
 
-impl Format for Expression<'_> {
-    fn fmt_fields(&self, f: &mut Formatter) {
+impl FormatNode for Expression<'_> {
+    fn fmt(&self, f: &mut Formatter) {
         match self {
             Expression::NumericLiteral(num) => num.fmt(f),
             Expression::StringLiteral(num) => num.fmt(f),
             Expression::ArrayExpression(arr) => arr.fmt(f),
-            _ => {
-                write!(
-                    f,
-                    [
-                        text("/* TODO */"),
-                        // dynamic_text(self.span().source_text(f.source_text)),
-                    ]
-                );
-            }
+            _ => {}
         }
     }
 }
 
-impl Format for ArrayExpression<'_> {
+impl FormatNode for ArrayExpression<'_> {
     fn fmt_fields(&self, f: &mut Formatter) {
         let ArrayExpression { elements, .. } = self;
 
@@ -115,7 +102,7 @@ impl Format for ArrayExpression<'_> {
     }
 }
 
-impl Format for NumericLiteral<'_> {
+impl FormatNode for NumericLiteral<'_> {
     fn fmt_fields(&self, f: &mut Formatter) {
         let NumericLiteral { raw, .. } = self;
 
@@ -125,7 +112,7 @@ impl Format for NumericLiteral<'_> {
     }
 }
 
-impl Format for StringLiteral<'_> {
+impl FormatNode for StringLiteral<'_> {
     fn fmt_fields(&self, f: &mut Formatter) {
         let StringLiteral { value, .. } = self;
 
