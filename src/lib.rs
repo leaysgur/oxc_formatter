@@ -12,6 +12,7 @@ mod printer;
 mod state;
 
 use oxc_allocator::Allocator;
+use oxc_parser::{ParseOptions, Parser};
 use oxc_span::SourceType;
 
 use arguments::Arguments;
@@ -49,8 +50,11 @@ pub fn format_source(
     let allocator = Allocator::new();
 
     // TEXT -> AST
-    let parser = oxc_parser::Parser::new(&allocator, source_text, source_type);
+    let parser =
+        Parser::new(&allocator, source_text, source_type).with_options(ParseOptions::default());
     let parsed = parser.parse();
+    let program = parsed.program;
+    let source_text = program.source_text;
 
     // TODO: Transform AST
 
@@ -58,17 +62,15 @@ pub fn format_source(
     let mut buffer = VecBuffer::new(&mut state);
 
     // AST -> IR
-    parsed.program.fmt(&mut Formatter::new(&mut buffer));
+    program.fmt(&mut Formatter::new(&mut buffer));
 
     let mut document = Document::from(buffer.into_vec());
     document.propagate_expand();
 
-    let context = state.into_context();
-
     // IR -> TEXT
     let printer = Printer::new(
-        parsed.program.source_text,
-        context.options().as_print_options(),
+        source_text,
+        state.into_context().options().as_print_options(),
     );
     let printed = printer.print(&document)?;
 

@@ -12,10 +12,13 @@ pub trait Format {
     fn fmt(&self, f: &mut Formatter);
 }
 
-pub trait FormatNode where Self: GetSpan {
+pub trait FormatNode
+where
+    Self: GetSpan,
+{
     fn fmt(&self, f: &mut Formatter) {
         let _span = self.span();
-        
+
         // if self.is_suppressed(node, f) {
         //     return write!(f, [format_suppressed_node(node.syntax())]);
         // }
@@ -28,16 +31,12 @@ pub trait FormatNode where Self: GetSpan {
 
     /// Formats the node without comments. Ignores any suppression comments.
     fn fmt_node(&self, f: &mut Formatter) {
-        let needs_parentheses = self.needs_parentheses();
-
-        if needs_parentheses {
+        if self.needs_parentheses() {
             write!(f, [text("(")]);
-        }
-
-        self.fmt_fields(f);
-
-        if needs_parentheses {
+            self.fmt_fields(f);
             write!(f, [text(")")]);
+        } else {
+            self.fmt_fields(f);
         }
     }
 
