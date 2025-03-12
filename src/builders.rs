@@ -2408,7 +2408,7 @@ where
 
         self.has_elements = true;
 
-        // TODO: Why this can't be used?
+        // TODO: Need to check if this works
         // write!(self.fmt, [content]);
         content.fmt(self.fmt);
     }
@@ -2417,7 +2417,7 @@ where
     pub fn entry_no_separator(&mut self, content: &dyn Format) {
         self.has_elements = true;
 
-        // TODO: Why this can't be used?
+        // TODO: Need to check if this works
         // write!(self.fmt, [content]);
         content.fmt(self.fmt);
     }
@@ -2426,7 +2426,7 @@ where
     pub fn entries<F, I>(&mut self, entries: I) -> &mut Self
     where
         F: Format,
-        I: IntoIterator<Item = ((), F)>,
+        I: IntoIterator<Item = ((/* TODO: SyntaxNode */), F)>,
     {
         for (node, content) in entries {
             self.entry(node, &content)
