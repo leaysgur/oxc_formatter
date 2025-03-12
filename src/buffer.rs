@@ -12,7 +12,7 @@ use crate::format_element::{
     Interned, LineMode, PrintMode,
     tag::{Condition, Tag},
 };
-use crate::write;
+use crate::write_with_formatter;
 
 /// A trait for writing or formatting into [FormatElement]-accepting buffers or streams.
 pub trait Buffer {
@@ -60,7 +60,7 @@ pub trait Buffer {
     /// assert_eq!(buffer.into_vec(), vec![FormatElement::StaticText{ text: "Hello World" }]);
     /// ```
     fn write_fmt(mut self: &mut Self, arguments: Arguments) {
-        write(&mut self, arguments);
+        write_with_formatter(&mut self, arguments);
     }
 
     /// Returns the formatting state relevant for this formatting session.

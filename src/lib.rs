@@ -33,7 +33,7 @@ type FormatResult<T> = Result<T, FormatError>;
 // ---
 
 #[inline(always)]
-fn write(output: &mut dyn Buffer, args: Arguments) {
+fn write_with_formatter(output: &mut dyn Buffer, args: Arguments) {
     let mut f = Formatter::new(output);
     f.write_fmt(args);
 }
@@ -57,7 +57,7 @@ pub fn format_source(
     let mut buffer = VecBuffer::new(&mut state);
 
     // AST -> IR
-    write(
+    write_with_formatter(
         &mut buffer,
         Arguments::from(&Argument::new(&parsed.program)),
     );
