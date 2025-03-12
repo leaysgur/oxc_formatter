@@ -23,7 +23,7 @@ impl FormatNode for Program<'_> {
                     decl.fmt(f);
                 }
                 _ => {
-                    write!(f, [text("/* TODO! */")]);
+                    write!(f, [text("/* TODO: Statement::Xxx */")]);
                 }
             }
         }
@@ -70,7 +70,9 @@ impl FormatNode for Expression<'_> {
             Expression::NumericLiteral(num) => num.fmt(f),
             Expression::StringLiteral(num) => num.fmt(f),
             Expression::ArrayExpression(arr) => arr.fmt(f),
-            _ => {}
+            _ => {
+                write!(f, [text("/* TODO: Expression::Xxx */")]);
+            }
         }
     }
 }
@@ -88,13 +90,7 @@ impl FormatNode for ArrayExpression<'_> {
             match element {
                 ArrayExpressionElement::NumericLiteral(num) => num.fmt(f),
                 _ => {
-                    write!(
-                        f,
-                        [
-                            text("/* TODO */"),
-                            // dynamic_text(element.span().source_text(f.source_text)),
-                        ]
-                    );
+                    write!(f, [text("/* TODO: ArrayExpressionElement::Xxx */")]);
                 }
             }
         }
