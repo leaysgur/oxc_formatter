@@ -1,9 +1,9 @@
-use crate::state::FormatState;
-use crate::options::FormatOptions;
-use crate::context::FormatContext;
 use crate::arguments::Arguments;
 use crate::buffer::{Buffer, BufferSnapshot};
+use crate::context::FormatContext;
 use crate::format_element::FormatElement;
+use crate::options::FormatOptions;
+use crate::state::FormatState;
 
 pub struct Formatter<'a> {
     pub(super) buffer: &'a mut dyn Buffer,

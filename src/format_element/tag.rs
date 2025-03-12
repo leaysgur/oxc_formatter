@@ -1,8 +1,8 @@
 use std::cell::Cell;
 use std::num::NonZeroU8;
 
-use crate::group_id::GroupId;
 use crate::format_element::PrintMode;
+use crate::group_id::GroupId;
 
 /// A Tag marking the start and end of some content to which some special formatting should be applied.
 ///
@@ -158,7 +158,10 @@ pub struct Group {
 
 impl Group {
     pub fn new() -> Self {
-        Self { id: None, mode: Cell::new(GroupMode::Flat) }
+        Self {
+            id: None,
+            mode: Cell::new(GroupMode::Flat),
+        }
     }
 
     pub fn with_id(mut self, id: Option<GroupId>) -> Self {
@@ -208,7 +211,10 @@ pub struct Condition {
 
 impl Condition {
     pub fn new(mode: PrintMode) -> Self {
-        Self { mode, group_id: None }
+        Self {
+            mode,
+            group_id: None,
+        }
     }
 
     pub fn with_group_id(mut self, id: Option<GroupId>) -> Self {

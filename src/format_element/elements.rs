@@ -202,7 +202,10 @@ impl FormatElement {
     }
 
     pub const fn is_text(&self) -> bool {
-        matches!(self, FormatElement::DynamicText { .. } | FormatElement::StaticText { .. })
+        matches!(
+            self,
+            FormatElement::DynamicText { .. } | FormatElement::StaticText { .. }
+        )
     }
 
     pub const fn is_space(&self) -> bool {
@@ -285,7 +288,9 @@ impl BestFittingElement {
             "Requires at least the least expanded and most expanded variants"
         );
 
-        Self { variants: variants.into_boxed_slice() }
+        Self {
+            variants: variants.into_boxed_slice(),
+        }
     }
 
     /// Returns the most expanded variant
@@ -355,7 +360,10 @@ mod tests {
         assert_eq!(normalize_newlines("a\n\n\nb", LINE_TERMINATORS), "a\n\n\nb");
         assert_eq!(normalize_newlines("a\rb", LINE_TERMINATORS), "a\nb");
         assert_eq!(normalize_newlines("a\r\nb", LINE_TERMINATORS), "a\nb");
-        assert_eq!(normalize_newlines("a\r\n\r\n\r\nb", LINE_TERMINATORS), "a\n\n\nb");
+        assert_eq!(
+            normalize_newlines("a\r\n\r\n\r\nb", LINE_TERMINATORS),
+            "a\n\n\nb"
+        );
         assert_eq!(normalize_newlines("a\u{2028}b", LINE_TERMINATORS), "a\nb");
         assert_eq!(normalize_newlines("a\u{2029}b", LINE_TERMINATORS), "a\nb");
     }

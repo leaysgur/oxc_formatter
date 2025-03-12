@@ -1,13 +1,18 @@
-use oxc_formatter::format_source;
+use oxc_formatter::{FormatOptions, format_source};
 use oxc_span::SourceType;
 
 fn main() {
     let source_text = "let a, b=1;const c =   [2,3,4]   ; call()";
     let source_type = SourceType::mjs();
+
+    let options = FormatOptions::default();
+    println!("🛠️ Format with options:");
+    println!("{options:?}");
+
     println!("👀 Original code:");
     println!("{source_text}");
 
-    match format_source(source_text, source_type) {
+    match format_source(source_text, source_type, options) {
         Ok(formatted) => {
             println!("✨ Formatted code:");
             println!("{}", formatted);
