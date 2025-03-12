@@ -73,6 +73,7 @@ impl Format for Expression<'_> {
     fn fmt_fields(&self, f: &mut Formatter) {
         match self {
             Expression::NumericLiteral(num) => num.fmt(f),
+            Expression::StringLiteral(num) => num.fmt(f),
             Expression::ArrayExpression(arr) => arr.fmt(f),
             _ => {
                 write!(
@@ -116,8 +117,29 @@ impl Format for ArrayExpression<'_> {
 
 impl Format for NumericLiteral<'_> {
     fn fmt_fields(&self, f: &mut Formatter) {
-        let NumericLiteral { value, .. } = self;
+        let NumericLiteral { raw, .. } = self;
 
-        write!(f, [dynamic_text(value.to_string().as_str()),]);
+        let raw = raw.expect("NumericLiteral should have a raw value");
+
+        write!(f, [dynamic_text(raw.to_string().as_str())]);
+    }
+}
+
+impl Format for StringLiteral<'_> {
+    fn fmt_fields(&self, f: &mut Formatter) {
+        let StringLiteral { value, .. } = self;
+
+        let quote = || {
+            if f.options().quote_style().is_double() {
+                text("\"")
+            } else {
+                text("'")
+            }
+        };
+
+        write!(
+            f,
+            [quote(), dynamic_text(value.to_string().as_str()), quote()]
+        );
     }
 }

@@ -6,7 +6,7 @@ use crate::options::FormatOptions;
 use crate::state::FormatState;
 
 pub struct Formatter<'a> {
-    pub(super) buffer: &'a mut dyn Buffer,
+    buffer: &'a mut dyn Buffer,
 }
 
 impl<'a> Formatter<'a> {

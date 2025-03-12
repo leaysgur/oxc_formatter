@@ -2,7 +2,7 @@ use oxc_formatter::{FormatOptions, format_source};
 use oxc_span::SourceType;
 
 fn main() {
-    let source_text = "let a, b=1;const c =   [2,3,4]   ; call()";
+    let source_text = "let a, b='Hey';const c =   [2,3,4]   ; call()";
     let source_type = SourceType::mjs();
 
     let options = FormatOptions::default();
