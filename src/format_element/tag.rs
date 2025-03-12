@@ -1,7 +1,7 @@
 use std::cell::Cell;
 use std::num::NonZeroU8;
 
-use crate::GroupId;
+use crate::group_id::GroupId;
 use crate::format_element::PrintMode;
 
 /// A Tag marking the start and end of some content to which some special formatting should be applied.

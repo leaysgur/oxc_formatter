@@ -1,4 +1,4 @@
-use crate::{IndentStyle, IndentWidth, LineEnding, LineWidth};
+use crate::options::{IndentStyle, IndentWidth, LineEnding, LineWidth};
 
 /// Options that affect how the [crate::Printer] prints the format tokens
 #[derive(Clone, Debug, Eq, PartialEq)]

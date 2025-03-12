@@ -5,13 +5,14 @@ use std::ops::{Deref, DerefMut};
 
 use rustc_hash::FxHashMap;
 
-use super::{Arguments, FormatElement};
 use crate::FormatState;
-use crate::write;
+use crate::arguments::Arguments;
+use crate::format_element::FormatElement;
 use crate::format_element::{
     Interned, LineMode, PrintMode,
     tag::{Condition, Tag},
 };
+use crate::write;
 
 /// A trait for writing or formatting into [FormatElement]-accepting buffers or streams.
 pub trait Buffer {

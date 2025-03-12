@@ -8,7 +8,8 @@ use crate::format::Format;
 use crate::format_element::tag::{Condition, DedentMode, GroupMode, LabelId, Tag::*};
 use crate::format_element::*;
 use crate::formatter::Formatter;
-use crate::{GroupId, write};
+use crate::group_id::GroupId;
+use crate::write;
 
 /// A line break that only gets printed if the enclosing `Group` doesn't fit on a single line.
 /// It's omitted if the enclosing `Group` fits on a single line.
@@ -109,7 +110,7 @@ pub const fn hard_line_break() -> Line {
 /// use biome_formatter::{format, format_args};
 /// use biome_formatter::prelude::*;
 ///
-/// fn main()  {
+/// # fn main()  {
 /// let elements = format!(
 ///     SimpleFormatContext::default(), [
 ///     group(&format_args![
@@ -316,7 +317,7 @@ fn debug_assert_no_newlines(text: &str) {
 /// use biome_formatter::{format};
 /// use biome_formatter::prelude::*;
 ///
-/// fn main()  {
+/// # fn main()  {
 /// let elements = format!(SimpleFormatContext::default(), [
 ///     text("a"),
 ///     line_suffix(&text("c")),
@@ -1813,7 +1814,7 @@ impl Format for ExpandParent {
 /// use biome_formatter::prelude::*;
 /// use biome_formatter::printer::PrintWidth;
 ///
-/// fn main()  {
+/// # fn main()  {
 /// let context = SimpleFormatContext::new(SimpleFormatOptions {
 ///     line_width: LineWidth::try_from(20).unwrap(),
 ///     ..SimpleFormatOptions::default()

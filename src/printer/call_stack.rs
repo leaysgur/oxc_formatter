@@ -1,11 +1,12 @@
 use std::fmt::Debug;
 use std::num::NonZeroU8;
 
+use crate::PrintResult;
 use crate::format_element::PrintMode;
 use crate::format_element::tag::TagKind;
+use crate::options::IndentStyle;
 use crate::printer::Indention;
 use crate::printer::stack::{Stack, StackedStack};
-use crate::{IndentStyle, PrintResult};
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub(super) enum StackFrameKind {
@@ -47,7 +48,9 @@ impl PrintElementArgs {
 
 impl Default for PrintElementArgs {
     fn default() -> Self {
-        Self { mode: PrintMode::Expanded }
+        Self {
+            mode: PrintMode::Expanded,
+        }
     }
 }
 
@@ -70,17 +73,22 @@ pub(super) trait CallStack {
         let last = self.stack_mut().pop();
 
         match last {
-            Some(StackFrame { kind: StackFrameKind::Tag(actual_kind), args })
-                if actual_kind == kind =>
-            {
-                Ok(args)
-            }
+            Some(StackFrame {
+                kind: StackFrameKind::Tag(actual_kind),
+                args,
+            }) if actual_kind == kind => Ok(args),
             // Start / End kind don't match
-            Some(StackFrame { kind: StackFrameKind::Tag(expected_kind), .. }) => {
-                Err(Self::invalid_document_error(kind, Some(expected_kind)))
-            }
+            Some(StackFrame {
+                kind: StackFrameKind::Tag(expected_kind),
+                ..
+            }) => Err(Self::invalid_document_error(kind, Some(expected_kind))),
             // Tried to pop the outer most stack frame, which is not valid
-            Some(frame @ StackFrame { kind: StackFrameKind::Root, .. }) => {
+            Some(
+                frame @ StackFrame {
+                    kind: StackFrameKind::Root,
+                    ..
+                },
+            ) => {
                 // Put it back in to guarantee that the stack is never empty
                 self.stack_mut().push(frame);
                 Err(Self::invalid_document_error(kind, None))
@@ -101,12 +109,20 @@ pub(super) trait CallStack {
 
     /// Returns the [PrintElementArgs] for the current stack frame.
     fn top(&self) -> PrintElementArgs {
-        self.stack().top().expect("Expected `stack` to never be empty.").args
+        self.stack()
+            .top()
+            .expect("Expected `stack` to never be empty.")
+            .args
     }
 
     /// Returns the [TagKind] of the current stack frame or [None] if this is the root stack frame.
     fn top_kind(&self) -> Option<TagKind> {
-        match self.stack().top().expect("Expected `stack` to never be empty.").kind {
+        match self
+            .stack()
+            .top()
+            .expect("Expected `stack` to never be empty.")
+            .kind
+        {
             StackFrameKind::Root => None,
             StackFrameKind::Tag(kind) => Some(kind),
         }
@@ -114,7 +130,10 @@ pub(super) trait CallStack {
 
     /// Creates a new stack frame for a [FormatElement::Tag] of `kind` with `args` as the call arguments.
     fn push(&mut self, kind: TagKind, args: PrintElementArgs) {
-        self.stack_mut().push(StackFrame { kind: StackFrameKind::Tag(kind), args })
+        self.stack_mut().push(StackFrame {
+            kind: StackFrameKind::Tag(kind),
+            args,
+        })
     }
 }
 
@@ -124,7 +143,10 @@ pub(super) struct PrintCallStack(Vec<StackFrame>);
 
 impl PrintCallStack {
     pub(super) fn new(args: PrintElementArgs) -> Self {
-        Self(vec![StackFrame { kind: StackFrameKind::Root, args }])
+        Self(vec![StackFrame {
+            kind: StackFrameKind::Root,
+            args,
+        }])
     }
 }
 
@@ -243,7 +265,8 @@ impl PrintIndentStack {
         }
     }
     pub fn flush_suffixes(&mut self) {
-        self.indentions.extend(self.suffix_indentions.drain(..).rev());
+        self.indentions
+            .extend(self.suffix_indentions.drain(..).rev());
     }
 }
 impl IndentStack for PrintIndentStack {
@@ -285,7 +308,10 @@ impl<'print> FitsIndentStack<'print> {
         let history_indentions =
             StackedStack::with_vec(&print.history_indentions, saved_history_indent_stack);
 
-        Self { indentions, history_indentions }
+        Self {
+            indentions,
+            history_indentions,
+        }
     }
 }
 

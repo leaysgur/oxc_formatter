@@ -11,9 +11,12 @@ use unicode_width::UnicodeWidthChar;
 
 pub use options::*;
 
+use crate::PrintResult;
 use crate::format_element::{
     BestFittingElement, FormatElement, LineMode, PrintMode, document::Document, tag::Tag::*, tag::*,
 };
+use crate::group_id::GroupId;
+use crate::options::IndentStyle;
 use crate::printer::call_stack::{
     CallStack, FitsCallStack, FitsIndentStack, IndentStack, PrintCallStack, PrintElementArgs,
     StackFrame, SuffixStack,
@@ -22,7 +25,6 @@ use crate::printer::line_suffixes::{LineSuffixEntry, LineSuffixes};
 use crate::printer::queue::{
     AllPredicate, FitsEndPredicate, FitsQueue, PrintQueue, Queue, SingleEntryPredicate,
 };
-use crate::{GroupId, IndentStyle, PrintResult, Printed};
 
 use self::call_stack::PrintIndentStack;
 
@@ -44,17 +46,13 @@ impl<'a> Printer<'a> {
     }
 
     /// Prints the passed in element as well as all its content
-    pub fn print(self, document: &'a Document) -> PrintResult<Printed> {
+    pub fn print(self, document: &'a Document) -> PrintResult<String> {
         self.print_with_indent(document, 0)
     }
 
     /// Prints the passed in element as well as all its content,
     /// starting at the specified indentation level
-    pub fn print_with_indent(
-        mut self,
-        document: &'a Document,
-        indent: u16,
-    ) -> PrintResult<Printed> {
+    pub fn print_with_indent(mut self, document: &'a Document, indent: u16) -> PrintResult<String> {
         let mut stack = PrintCallStack::new(PrintElementArgs::new());
         let mut queue: PrintQueue<'a> = PrintQueue::new(document.as_ref());
         let mut indent_stack = PrintIndentStack::new(Indention::Level(indent));
@@ -67,7 +65,7 @@ impl<'a> Printer<'a> {
             }
         }
 
-        Ok(Printed::new(self.state.buffer))
+        Ok(self.state.buffer)
     }
 
     /// Prints a single element and push the following elements to queue
