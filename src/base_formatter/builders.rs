@@ -1,11 +1,10 @@
 use crate::base_formatter::format_element::tag::{Condition, Tag};
 use crate::base_formatter::prelude::tag::{DedentMode, GroupMode, LabelId};
 use crate::base_formatter::prelude::*;
-use crate::base_formatter::{Argument, Arguments, GroupId, TextSize, format_element};
+use crate::base_formatter::{Argument, Arguments, GroupId, format_element};
 use crate::write;
 use crate::base_formatter::{Buffer, VecBuffer};
 use Tag::*;
-use std::borrow::Cow;
 use std::cell::Cell;
 use std::marker::PhantomData;
 use std::num::NonZeroU8;
