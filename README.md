@@ -69,4 +69,6 @@ Then, apply following changes:
   - Remove mod
 - base_formatter/separated.rs
   - Remove mod
+- base_formatter/sourcemap.rs
+  - Remove mod
 

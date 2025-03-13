@@ -1,10 +1,7 @@
 use crate::base_formatter::buffer::BufferSnapshot;
 use crate::base_formatter::builders::{FillBuilder, JoinBuilder, JoinNodesBuilder, Line};
 use crate::base_formatter::prelude::*;
-use crate::base_formatter::{
-    Arguments, Buffer, Comments, CstFormatContext, FormatContext, FormatState, FormatStateSnapshot,
-    GroupId, VecBuffer,
-};
+use crate::base_formatter::{Arguments, Buffer, FormatContext, FormatState, GroupId, VecBuffer};
 
 /// Handles the formatting of a CST and stores the context how the CST should be formatted (user preferences).
 /// The formatter is passed to the [Format] implementation of every node in the CST so that they
@@ -230,25 +227,13 @@ where
     pub fn state_snapshot(&self) -> FormatterSnapshot {
         FormatterSnapshot {
             buffer: self.buffer.snapshot(),
-            state: self.state().snapshot(),
         }
     }
 
     #[inline]
     /// Restore the state of the formatter to a previous snapshot
     pub fn restore_state_snapshot(&mut self, snapshot: FormatterSnapshot) {
-        self.state_mut().restore_snapshot(snapshot.state);
         self.buffer.restore_snapshot(snapshot.buffer);
-    }
-}
-
-impl<Context> Formatter<'_, Context>
-where
-    Context: CstFormatContext,
-{
-    /// Returns the comments from the context.
-    pub fn comments(&self) -> &Comments<Context::Language> {
-        self.context().comments()
     }
 }
 
@@ -297,5 +282,4 @@ impl<Context> Buffer for Formatter<'_, Context> {
 /// mode and compiled to nothing in release mode
 pub struct FormatterSnapshot {
     buffer: BufferSnapshot,
-    state: FormatStateSnapshot,
 }

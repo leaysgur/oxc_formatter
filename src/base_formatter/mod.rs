@@ -31,7 +31,6 @@ pub mod formatter;
 pub mod group_id;
 pub mod prelude;
 pub mod printer;
-mod source_map;
 pub mod token;
 
 use crate::base_formatter::formatter::Formatter;
@@ -53,7 +52,6 @@ pub use buffer::{
 pub use builders::BestFitting;
 pub use format_element::{FormatElement, LINE_TERMINATORS, normalize_newlines};
 pub use group_id::GroupId;
-pub use source_map::{TransformSourceMap, TransformSourceMapBuilder};
 use std::marker::PhantomData;
 use std::num::ParseIntError;
 use std::str::FromStr;
@@ -591,13 +589,6 @@ pub trait FormatContext {
 
     /// Returns the formatting options
     fn options(&self) -> &Self::Options;
-
-    /// Returns [None] if the CST has not been pre-processed.
-    ///
-    /// Returns [Some] if the CST has been pre-processed to simplify formatting.
-    /// The source map can be used to map positions of the formatted nodes back to their original
-    /// source locations or to resolve the source text.
-    fn source_map(&self) -> Option<&TransformSourceMap>;
 }
 
 /// Options customizing how the source code should be formatted.
@@ -641,9 +632,6 @@ impl FormatContext for SimpleFormatContext {
         &self.options
     }
 
-    fn source_map(&self) -> Option<&TransformSourceMap> {
-        None
-    }
 }
 
 #[derive(Debug, Default, Eq, PartialEq, Copy, Clone)]
@@ -1183,7 +1171,7 @@ pub trait FormatLanguage {
     fn transform(
         &self,
         _root: &SyntaxNode<Self::SyntaxLanguage>,
-    ) -> Option<(SyntaxNode<Self::SyntaxLanguage>, TransformSourceMap)> {
+    ) -> Option<SyntaxNode<Self::SyntaxLanguage>> {
         None
     }
 
@@ -1202,7 +1190,6 @@ pub trait FormatLanguage {
     fn create_context(
         self,
         root: &SyntaxNode<Self::SyntaxLanguage>,
-        source_map: Option<TransformSourceMap>,
     ) -> Self::Context;
 }
 
@@ -1257,7 +1244,7 @@ pub fn format_node<L: FormatLanguage>(
         None => (root.clone(), None),
     };
 
-    let context = language.create_context(&root, source_map);
+    let context = language.create_context(&root);
     let format_node = FormatRefWithRule::new(&root, L::FormatRule::default());
 
     let mut state = FormatState::new(context);

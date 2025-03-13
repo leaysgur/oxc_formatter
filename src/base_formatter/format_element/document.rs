@@ -5,7 +5,7 @@ use crate::base_formatter::prelude::tag::GroupMode;
 use crate::base_formatter::prelude::*;
 use crate::base_formatter::{
     BufferExtensions, Format, FormatContext, FormatElement, FormatOptions, FormatResult, Formatter,
-    IndentStyle, IndentWidth, LineEnding, LineWidth, PrinterOptions, TransformSourceMap,
+    IndentStyle, IndentWidth, LineEnding, LineWidth, PrinterOptions, 
 };
 use crate::{format, write};
 use rustc_hash::FxHashMap;
