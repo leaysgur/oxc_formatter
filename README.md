@@ -2,6 +2,11 @@
 
 PoC implementation of formatter for OXC AST, based on `biome(_js)_formatter`.
 
+> [!IMPORTANT]
+> https://github.com/leaysgur/oxc_formatter/pull/1 is the most active branch for now.
+> After some conversation, I realized that fundamental rework is needed...
+
+
 ```
 # cargo run
 🛠️ Format with options:
