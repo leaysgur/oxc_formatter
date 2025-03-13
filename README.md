@@ -29,6 +29,8 @@ Then, apply following changes:
   - Export `TextSize` as `u32`
   - Remove `PrintedTokens` related
   - Remove `tracing` call
+  - Remove `SourceMarker`
+  - Remove `CstFormatContext`
 - base_formatter/diagnostics.rs
   - Remove cfg_attr for `serde`
   - Remove `impl Diagnostic`
@@ -56,5 +58,15 @@ Then, apply following changes:
 - base_formatter/token/number.rs
   - Remove mod
 - base_formatter/printed_tokens.rs
+  - Remove mod
+- base_formatter/comments.rs
+  - Remove mod
+- base_formatter/comments/*.rs
+  - Remove mod
+- base_formatter/trivia.rs
+  - Remove mod
+- base_formatter/verbatim.rs
+  - Remove mod
+- base_formatter/separated.rs
   - Remove mod
 

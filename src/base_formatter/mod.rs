@@ -24,7 +24,6 @@
 mod arguments;
 mod buffer;
 mod builders;
-pub mod comments;
 pub mod diagnostics;
 pub mod format_element;
 mod format_extensions;
@@ -32,11 +31,8 @@ pub mod formatter;
 pub mod group_id;
 pub mod prelude;
 pub mod printer;
-pub mod separated;
 mod source_map;
 pub mod token;
-pub mod trivia;
-mod verbatim;
 
 use crate::base_formatter::formatter::Formatter;
 use crate::base_formatter::group_id::UniqueGroupIdBuilder;
@@ -44,7 +40,6 @@ use crate::base_formatter::prelude::TagKind;
 use std::fmt;
 use std::fmt::{Debug, Display};
 
-use crate::base_formatter::comments::{CommentStyle, Comments, SourceComment};
 pub use crate::base_formatter::diagnostics::{
     ActualStart, FormatError, InvalidDocumentError, PrintError,
 };
@@ -475,12 +470,6 @@ impl std::fmt::Display for BracketSpacing {
     }
 }
 
-impl biome_console::fmt::Display for BracketSpacing {
-    fn fmt(&self, fmt: &mut biome_console::fmt::Formatter) -> std::io::Result<()> {
-        fmt.write_str(&self.0.to_string())
-    }
-}
-
 impl FromStr for BracketSpacing {
     type Err = &'static str;
 
@@ -634,21 +623,6 @@ pub trait FormatOptions {
     fn as_print_options(&self) -> PrinterOptions;
 }
 
-/// The [CstFormatContext] is an extension of the CST unaware [FormatContext] and must be implemented
-/// by every language.
-///
-/// The context customizes the comments formatting and stores the comments of the CST.
-pub trait CstFormatContext: FormatContext {
-    type Language: Language;
-    type Style: CommentStyle<Language = Self::Language>;
-
-    /// Rule for formatting comments.
-    type CommentRule: FormatRule<SourceComment<Self::Language>, Context = Self> + Default;
-
-    /// Returns a reference to the program's comments.
-    fn comments(&self) -> &Comments<Self::Language>;
-}
-
 #[derive(Debug, Default, Eq, PartialEq)]
 pub struct SimpleFormatContext {
     options: SimpleFormatOptions,
@@ -710,15 +684,6 @@ impl Display for SimpleFormatOptions {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         fmt::Debug::fmt(self, f)
     }
-}
-
-/// Lightweight sourcemap marker between source and output tokens
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub struct SourceMarker {
-    /// Position of the marker in the original source
-    pub source: TextSize,
-    /// Position of the marker in the output code
-    pub dest: TextSize,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -1304,10 +1269,10 @@ pub fn format_node<L: FormatLanguage>(
     document.propagate_expand();
 
     let context = state.into_context();
-    let comments = context.comments();
+    // let comments = context.comments();
 
-    comments.assert_checked_all_suppressions(&root);
-    comments.assert_formatted_all_comments();
+    // comments.assert_checked_all_suppressions(&root);
+    // comments.assert_formatted_all_comments();
 
     Ok(Formatted::new(document, context))
 }
