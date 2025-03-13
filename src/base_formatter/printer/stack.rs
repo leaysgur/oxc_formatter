@@ -76,7 +76,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::printer::stack::{Stack, StackedStack};
+    use crate::base_formatter::printer::stack::{Stack, StackedStack};
 
     #[test]
     fn restore_consumed_stack() {

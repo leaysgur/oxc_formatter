@@ -2,68 +2,59 @@
 
 PoC implementation of formatter for OXC AST, based on `biome(_js)_formatter`.
 
-```
-# cargo run
-🛠️ Format with options:
-FormatOptions { indent_style: Tab, indent_width: IndentWidth(2), line_ending: Lf, line_width: LineWidth(8), quote_style: Double, jsx_quote_style: Double, quote_properties: AsNeeded, trailing_commas: All, semicolons: Always, arrow_parentheses: Always, bracket_spacing: BracketSpacing(true), bracket_same_line: BracketSameLine(false), attribute_position: Auto, expand: Auto }
-👀 Original code:
-let a, b='Hey';const c =   [2,3,4]   ; call()
-✨ Formatted code:
-let a, b = "Hey";
-const c = [2, 3, 4];
-/* TODO: Statement::Xxx */
-```
-
 ## Concerns
 
-- How to interact with `source_text`?
+- How to keep `source_text`?
   - verbatim, get_lines_before, etc
-  - `FormatContext` should keep ref, but it requires many signature changes in many places...
-- In Biome, each node seems to know its parent, but not in OXC
+- How to know parent, ancestors?
+  - In Biome, each node seems to know its parent, but not in OXC
   - Should we manage `AstKind` stack somewhere like the current implementation?
-  - Should we use existing things like `oxc_semantic` (along with `oxc_traverse` for preprocessing AST)?
+  - `oxc_semantic`(will introduce with `oxc_traverse` for preprocessing AST) can be used?
 - TBD...
 
-## Notable diffs
+## Migration logs
 
-- `biome_formatter` and `biome_js_formatter` is separated to support languages other than JS
-  - This is needed to avoid Rust's Orphans rule, which may not be necessary for us?
-- All of doctests are not updated yet
+First,
 
-### /
-- arguments.rs
-  - Update `-> FormatResult<()>` to `-> ()`
-  - ❗️ Remove tests
-- buffer.rs
-  - Update `-> FormatResult<()>` to `-> ()`
-  - Remove `PreambleBuffer`
-- builders.rs
-  - Update `-> FormatResult<()>` to `-> ()`
-  - Remove `SyntaxTokenCowSlice` and `LocatedTokenText` related builders
+- Copy biome_formatter -> base_formatter
+- Copy biome_js_formatter -> .
+  - Remove AST formatting parts
 
-### format_element/
-- tag.rs
-  - Remove `TextSize` for `Verbatim`
-  - Remove `serde` features for `TagKind`
-- document.rs
-  - Remove `Display` for `Document`
-  - Remove whole `IrFormatContext` related things
-  - ❗️ Remove tests
-- elements.rs
-  - ❗️ Remove `source_position: TextSize` of `DynamicText`
-  - ❗️ Remove `LocatedTokenText`
-  - Remove `static_assert!` sizes
+Then, apply following changes:
 
-### printer/
-- call_stack.rs
-  - Update `InvalidDocumentError` to `String`
-- options.rs
-  - Remove `From<FormatOptions>` for `PrinterOptions`
-- mod.rs
+- base_formatter/mod.rs
+  - Remove cfg_attr for `serde`
+  - Remove derive `Deseraizable, Merge`
+  - Remove `format_(range|subtree)` related
+  - Export `TextSize` as `u32`
+  - Remove `PrintedTokens` related
   - Remove `tracing` call
-  - Remove `source_position`, `source_markers` and `verbatim_markers` of `PrinterState`
-  - ❗️ Ignore `source_position` in `print_text()`
-    - This makes `range`, `cursor` related tests fail
-  - Update `PrintError` to `String`
-  - ❗️ Remove tests
+- base_formatter/diagnostics.rs
+  - Remove cfg_attr for `serde`
+  - Remove `impl Diagnostic`
+  - Remove `FormatError::RangeError`
+  - Remove tests
+- base_formatter/macros.rs
+  - Move to ./macros.rs
+- base_formatter/builders.rs
+  - Remove `syntax_token_cow_slice` related
+  - Remove `located_token_text` related
+  - Remove `source_position` of `DynamicText`
+- base_formatter/format_element.rs
+  - Remove `size_assert`
+  - Remove `LocatedTokenText`
+  - Remove `source_position` of `DynamicText`
+- base_formatter/format_element/document.rs
+  - Remove `IRFormatContext` related
+  - Remove tests
+- base_formatter/printer/mod.rs
+  - Remove `tracing` call
+  - Remove `(verbatim|source)_markers`
+  - Update `Printed { code }` only
+- base_formatter/buffer.rs
+  - Remove `PreambleBuffer` related
+- base_formatter/token/number.rs
+  - Remove mod
+- base_formatter/printed_tokens.rs
+  - Remove mod
 

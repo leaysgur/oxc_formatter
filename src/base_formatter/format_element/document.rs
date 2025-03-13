@@ -1,12 +1,15 @@
 #![expect(clippy::mutable_key_type)]
-
-use std::ops::Deref;
-
+use super::tag::Tag;
+use crate::base_formatter::format_element::tag::DedentMode;
+use crate::base_formatter::prelude::tag::GroupMode;
+use crate::base_formatter::prelude::*;
+use crate::base_formatter::{
+    BufferExtensions, Format, FormatContext, FormatElement, FormatOptions, FormatResult, Formatter,
+    IndentStyle, IndentWidth, LineEnding, LineWidth, PrinterOptions, TransformSourceMap,
+};
+use crate::{format, write};
 use rustc_hash::FxHashMap;
-
-use crate::format_element::FormatElement;
-use crate::format_element::elements::*;
-use crate::format_element::tag::*;
+use std::ops::Deref;
 
 /// A formatted document.
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
@@ -27,7 +30,7 @@ impl Document {
     pub(crate) fn propagate_expand(&mut self) {
         #[derive(Debug)]
         enum Enclosing<'a> {
-            Group(&'a Group),
+            Group(&'a tag::Group),
             BestFitting,
         }
 
@@ -109,6 +112,7 @@ impl Document {
                     }
                     FormatElement::StaticText { text } => text.contains('\n'),
                     FormatElement::DynamicText { text, .. } => text.contains('\n'),
+                    FormatElement::LocatedTokenText { slice, .. } => slice.contains('\n'),
                     FormatElement::ExpandParent
                     | FormatElement::Line(LineMode::Hard | LineMode::Empty) => true,
                     _ => false,
@@ -116,7 +120,7 @@ impl Document {
 
                 if element_expands {
                     expands = true;
-                    expand_parent(enclosing);
+                    expand_parent(enclosing)
                 }
             }
 
@@ -143,18 +147,25 @@ impl Deref for Document {
     }
 }
 
+impl std::fmt::Display for Document {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("TODO: IrFormat")
+    }
+}
+
 impl FormatElements for [FormatElement] {
     fn will_break(&self) -> bool {
+        use Tag::*;
         let mut ignore_depth = 0usize;
 
         for element in self {
             match element {
                 // Line suffix
                 // Ignore if any of its content breaks
-                FormatElement::Tag(Tag::StartLineSuffix) => {
+                FormatElement::Tag(StartLineSuffix) => {
                     ignore_depth += 1;
                 }
-                FormatElement::Tag(Tag::EndLineSuffix) => {
+                FormatElement::Tag(EndLineSuffix) => {
                     ignore_depth -= 1;
                 }
                 FormatElement::Interned(interned) if ignore_depth == 0 => {
@@ -176,16 +187,17 @@ impl FormatElements for [FormatElement] {
     }
 
     fn may_directly_break(&self) -> bool {
+        use Tag::*;
         let mut ignore_depth = 0usize;
 
         for element in self {
             match element {
                 // Line suffix
                 // Ignore if any of its content breaks
-                FormatElement::Tag(Tag::StartLineSuffix) => {
+                FormatElement::Tag(StartLineSuffix) => {
                     ignore_depth += 1;
                 }
-                FormatElement::Tag(Tag::EndLineSuffix) => {
+                FormatElement::Tag(EndLineSuffix) => {
                     ignore_depth -= 1;
                 }
                 FormatElement::Interned(interned) if ignore_depth == 0 => {
@@ -212,6 +224,9 @@ impl FormatElements for [FormatElement] {
     }
 
     fn start_tag(&self, kind: TagKind) -> Option<&Tag> {
+        // Assert that the document ends at a tag with the specified kind;
+        let _ = self.end_tag(kind)?;
+
         fn traverse_slice<'a>(
             slice: &'a [FormatElement],
             kind: TagKind,
@@ -226,8 +241,9 @@ impl FormatElements for [FormatElement] {
                                 return None;
                             } else if *depth == 1 {
                                 return Some(tag);
+                            } else {
+                                *depth -= 1;
                             }
-                            *depth -= 1;
                         } else {
                             *depth += 1;
                         }
@@ -252,8 +268,6 @@ impl FormatElements for [FormatElement] {
 
             None
         }
-        // Assert that the document ends at a tag with the specified kind;
-        let _ = self.end_tag(kind)?;
 
         let mut depth = 0usize;
 
