@@ -31,6 +31,7 @@ Then, apply following changes:
   - Remove `tracing` call
   - Remove `SourceMarker`
   - Remove `CstFormatContext`
+  - Remove `FormatToken`
 - base_formatter/diagnostics.rs
   - Remove cfg_attr for `serde`
   - Remove `impl Diagnostic`

@@ -631,7 +631,6 @@ impl FormatContext for SimpleFormatContext {
     fn options(&self) -> &Self::Options {
         &self.options
     }
-
 }
 
 #[derive(Debug, Default, Eq, PartialEq, Copy, Clone)]
@@ -831,18 +830,6 @@ where
     }
 }
 
-impl<T, Context> Format<Context> for SyntaxResult<T>
-where
-    T: Format<Context>,
-{
-    fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
-        match self {
-            Ok(value) => value.fmt(f),
-            Err(err) => Err(err.into()),
-        }
-    }
-}
-
 impl<Context> Format<Context> for () {
     #[inline]
     fn fmt(&self, _: &mut Formatter<Context>) -> FormatResult<()> {
@@ -865,43 +852,6 @@ pub trait FormatRule<T> {
     type Context;
 
     fn fmt(&self, item: &T, f: &mut Formatter<Self::Context>) -> FormatResult<()>;
-}
-
-/// Default implementation for formatting a token
-pub struct FormatToken<C> {
-    context: PhantomData<C>,
-}
-
-impl<C> Default for FormatToken<C> {
-    fn default() -> Self {
-        Self {
-            context: PhantomData,
-        }
-    }
-}
-
-impl<C> FormatRule<SyntaxToken<C::Language>> for FormatToken<C>
-where
-    C: CstFormatContext,
-    C::Language: 'static,
-{
-    type Context = C;
-
-    fn fmt(
-        &self,
-        token: &SyntaxToken<C::Language>,
-        f: &mut Formatter<Self::Context>,
-    ) -> FormatResult<()> {
-        f.state_mut().track_token(token);
-
-        crate::write!(
-            f,
-            [
-                format_skipped_token_trivia(token),
-                format_trimmed_token(token),
-            ]
-        )
-    }
 }
 
 /// Rule that supports customizing how it formats an object of type `T`.
@@ -1187,10 +1137,7 @@ pub trait FormatLanguage {
     fn options(&self) -> &<Self::Context as FormatContext>::Options;
 
     /// Creates the [FormatContext] with the given `source map` and `comments`
-    fn create_context(
-        self,
-        root: &SyntaxNode<Self::SyntaxLanguage>,
-    ) -> Self::Context;
+    fn create_context(self, root: &SyntaxNode<Self::SyntaxLanguage>) -> Self::Context;
 }
 
 /// Formats a syntax node file based on its features.
