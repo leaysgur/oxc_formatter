@@ -2409,7 +2409,7 @@ where
 
     /// Adds a new node with the specified formatted content to the output, respecting any new lines
     /// that appear before the node in the input source.
-    pub fn entry<L: Language>(&mut self, node: &SyntaxNode<L>, content: &dyn Format<Context>) {
+    pub fn entry(&mut self, node: (/* TODO: node */), content: &dyn Format<Context>) {
         self.result = self.result.and_then(|_| {
             if self.has_elements {
                 if get_lines_before(node) > 1 {
@@ -2435,11 +2435,10 @@ where
     }
 
     /// Adds an iterator of entries to the output. Each entry is a `(node, content)` tuple.
-    pub fn entries<L, F, I>(&mut self, entries: I) -> &mut Self
+    pub fn entries<F, I>(&mut self, entries: I) -> &mut Self
     where
-        L: Language,
         F: Format<Context>,
-        I: IntoIterator<Item = (SyntaxNode<L>, F)>,
+        I: IntoIterator<Item = ((/* TODO: node */), F)>,
     {
         for (node, content) in entries {
             self.entry(&node, &content)
@@ -2454,26 +2453,8 @@ where
 }
 
 /// Get the number of line breaks between two consecutive SyntaxNodes in the tree
-pub fn get_lines_before<L: Language>(next_node: &SyntaxNode<L>) -> usize {
-    // Count the newlines in the leading trivia of the next node
-    if let Some(token) = next_node.first_token() {
-        get_lines_before_token(&token)
-    } else {
-        0
-    }
-}
-
-pub fn get_lines_before_token<L: Language>(token: &SyntaxToken<L>) -> usize {
-    token
-        .leading_trivia()
-        .pieces()
-        .take_while(|piece| {
-            // Stop at the first comment or skipped piece, the comment printer
-            // will handle newlines between the comment and the node
-            !(piece.is_comments() || piece.is_skipped())
-        })
-        .filter(|piece| piece.is_newline())
-        .count()
+pub fn get_lines_before(node: ()) -> usize {
+    0 // TODO
 }
 
 /// Builder to fill as many elements as possible on a single line.
