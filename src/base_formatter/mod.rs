@@ -23,19 +23,17 @@
 
 mod arguments;
 mod buffer;
-mod builders;
+pub mod builders;
 pub mod diagnostics;
 pub mod format_element;
 mod format_extensions;
 pub mod formatter;
 pub mod group_id;
-pub mod prelude;
 pub mod printer;
 pub mod token;
 
 use crate::base_formatter::formatter::Formatter;
 use crate::base_formatter::group_id::UniqueGroupIdBuilder;
-use crate::base_formatter::prelude::TagKind;
 use std::fmt;
 use std::fmt::{Debug, Display};
 
@@ -49,10 +47,8 @@ pub use arguments::{Argument, Arguments};
 pub use buffer::{
     Buffer, BufferExtensions, BufferSnapshot, Inspect, RemoveSoftLinesBuffer, VecBuffer,
 };
-pub use builders::BestFitting;
 pub use format_element::{FormatElement, LINE_TERMINATORS, normalize_newlines};
 pub use group_id::GroupId;
-use std::marker::PhantomData;
 use std::num::ParseIntError;
 use std::str::FromStr;
 use token::string::Quote;

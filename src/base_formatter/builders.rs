@@ -1,10 +1,10 @@
-use crate::base_formatter::format_element::tag::{Condition, Tag};
-use crate::base_formatter::prelude::tag::{DedentMode, GroupMode, LabelId};
-use crate::base_formatter::prelude::*;
-use crate::base_formatter::{Argument, Arguments, GroupId, format_element};
-use crate::write;
+use crate::base_formatter::format_element::tag::{Condition, Tag::*};
+use crate::base_formatter::format_element::*;
+use crate::base_formatter::{
+    Argument, Arguments, Format, FormatResult, Formatter, GroupId, format_element,
+};
 use crate::base_formatter::{Buffer, VecBuffer};
-use Tag::*;
+use crate::write;
 use std::cell::Cell;
 use std::marker::PhantomData;
 use std::num::NonZeroU8;
@@ -278,7 +278,7 @@ impl std::fmt::Debug for StaticText {
 pub fn dynamic_text(text: &str) -> DynamicText {
     debug_assert_no_newlines(text);
 
-    DynamicText { text, }
+    DynamicText { text }
 }
 
 #[derive(Eq, PartialEq)]
@@ -2409,7 +2409,7 @@ where
 
     /// Adds a new node with the specified formatted content to the output, respecting any new lines
     /// that appear before the node in the input source.
-    pub fn entry(&mut self, node: (/* TODO: node */), content: &dyn Format<Context>) {
+    pub fn entry(&mut self, node: (), content: &dyn Format<Context>) {
         self.result = self.result.and_then(|_| {
             if self.has_elements {
                 if get_lines_before(node) > 1 {
@@ -2438,7 +2438,7 @@ where
     pub fn entries<F, I>(&mut self, entries: I) -> &mut Self
     where
         F: Format<Context>,
-        I: IntoIterator<Item = ((/* TODO: node */), F)>,
+        I: IntoIterator<Item = ((), F)>,
     {
         for (node, content) in entries {
             self.entry(&node, &content)

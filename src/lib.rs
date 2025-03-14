@@ -167,7 +167,6 @@
 // mod jsx;
 mod base_formatter;
 mod macros;
-mod prelude;
 // mod ts;
 // pub mod utils;
 
@@ -175,10 +174,14 @@ mod prelude;
 mod generated;
 pub mod context;
 
-use base_formatter::Format;
+use base_formatter::builders::text;
+use base_formatter::format_element::document::Document;
 use base_formatter::format_element::tag::Label;
-use base_formatter::prelude::*;
-use base_formatter::{Buffer, FormatOwnedWithRule, FormatRefWithRule, Formatted};
+use base_formatter::formatter::Formatter;
+use base_formatter::{
+    Buffer, Format, FormatOwnedWithRule, FormatRefWithRule, FormatResult, FormatRule, FormatState,
+    Formatted, VecBuffer,
+};
 
 use crate::context::{JsFormatContext, JsFormatOptions};
 

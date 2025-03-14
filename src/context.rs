@@ -1,10 +1,12 @@
+use crate::base_formatter::formatter::Formatter;
 use crate::base_formatter::printer::PrinterOptions;
+use crate::base_formatter::builders::{if_group_breaks, text};
+use crate::write;
 use crate::base_formatter::{
     AttributePosition, BracketSameLine, BracketSpacing, Expand, FormatContext, FormatOptions,
     IndentStyle, IndentWidth, LineEnding, LineWidth, QuoteStyle,
-    Format, FormatResult,
+    FormatResult, Format
 };
-use crate::prelude::*;
 use std::fmt;
 use std::fmt::Debug;
 use std::str::FromStr;
@@ -347,8 +349,8 @@ impl FromStr for QuoteProperties {
 impl fmt::Display for QuoteProperties {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            QuoteProperties::AsNeeded => write!(f, "As needed"),
-            QuoteProperties::Preserve => write!(f, "Preserve"),
+            QuoteProperties::AsNeeded => std::write!(f, "As needed"),
+            QuoteProperties::Preserve => std::write!(f, "Preserve"),
         }
     }
 }
@@ -387,8 +389,8 @@ impl FromStr for Semicolons {
 impl fmt::Display for Semicolons {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Semicolons::AsNeeded => write!(f, "As needed"),
-            Semicolons::Always => write!(f, "Always"),
+            Semicolons::AsNeeded => std::write!(f, "As needed"),
+            Semicolons::Always => std::write!(f, "Always"),
         }
     }
 }
@@ -428,8 +430,8 @@ impl FromStr for ArrowParentheses {
 impl fmt::Display for ArrowParentheses {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ArrowParentheses::AsNeeded => write!(f, "As needed"),
-            ArrowParentheses::Always => write!(f, "Always"),
+            ArrowParentheses::AsNeeded => std::write!(f, "As needed"),
+            ArrowParentheses::Always => std::write!(f, "Always"),
         }
     }
 }

@@ -1,9 +1,8 @@
-use crate::base_formatter::prelude::*;
 use std::cell::OnceCell;
 use std::marker::PhantomData;
 use std::ops::Deref;
 
-use crate::base_formatter::Buffer;
+use crate::base_formatter::{Buffer, Format, FormatElement, FormatResult, Formatter};
 
 /// Utility trait that allows memorizing the output of a [Format].
 /// Useful to avoid re-formatting the same object twice.

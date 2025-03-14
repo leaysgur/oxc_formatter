@@ -13,9 +13,9 @@ use crate::base_formatter::{
 };
 
 use crate::base_formatter::format_element::document::Document;
-use crate::base_formatter::format_element::tag::Condition;
-use crate::base_formatter::prelude::Tag::EndFill;
-use crate::base_formatter::prelude::tag::{DedentMode, Tag, TagKind};
+use crate::base_formatter::format_element::tag::{
+    Condition, DedentMode, Tag, Tag::EndFill, TagKind,
+};
 use crate::base_formatter::printer::call_stack::{
     CallStack, FitsCallStack, FitsIndentStack, IndentStack, PrintCallStack, PrintElementArgs,
     StackFrame, SuffixStack,
@@ -91,14 +91,7 @@ impl<'a> Printer<'a> {
             }
 
             FormatElement::StaticText { text } => self.print_text(text),
-            FormatElement::DynamicText {
-                text,
-                source_position,
-            } => self.print_text(text),
-            FormatElement::LocatedTokenText {
-                slice,
-                source_position,
-            } => self.print_text(slice),
+            FormatElement::DynamicText { text } => self.print_text(text),
 
             FormatElement::Line(line_mode) => {
                 if args.mode().is_flat() {
@@ -1338,10 +1331,13 @@ struct FitsState {
 
 #[cfg(test)]
 mod tests {
+    use crate::base_formatter::builders::*;
     use crate::base_formatter::LineEnding;
-    use crate::base_formatter::prelude::*;
     use crate::base_formatter::printer::{PrintWidth, Printer, PrinterOptions};
-    use crate::base_formatter::{Document, FormatState, IndentStyle, Printed, VecBuffer};
+    use crate::base_formatter::{
+        Document, Format, FormatState, IndentStyle, Printed, SimpleFormatContext, VecBuffer,
+        Formatter, FormatResult
+    };
     use crate::{format_args, write};
 
     fn format(root: &dyn Format<SimpleFormatContext>) -> Printed {

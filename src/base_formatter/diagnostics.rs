@@ -1,4 +1,4 @@
-use crate::base_formatter::prelude::TagKind;
+use crate::base_formatter::format_element::tag::TagKind;
 use std::error::Error;
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]

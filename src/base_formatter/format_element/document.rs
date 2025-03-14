@@ -1,13 +1,7 @@
 #![expect(clippy::mutable_key_type)]
-use super::tag::Tag;
-use crate::base_formatter::format_element::tag::DedentMode;
-use crate::base_formatter::prelude::tag::GroupMode;
-use crate::base_formatter::prelude::*;
-use crate::base_formatter::{
-    BufferExtensions, Format, FormatContext, FormatElement, FormatOptions, FormatResult, Formatter,
-    IndentStyle, IndentWidth, LineEnding, LineWidth, PrinterOptions, 
-};
-use crate::{format, write};
+use crate::base_formatter::FormatElement;
+use crate::base_formatter::format_element::tag::*;
+use crate::base_formatter::format_element::*;
 use rustc_hash::FxHashMap;
 use std::ops::Deref;
 

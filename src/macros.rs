@@ -338,8 +338,12 @@ macro_rules! best_fitting {
 
 #[cfg(test)]
 mod tests {
-    use crate::base_formatter::prelude::*;
-    use crate::base_formatter::{FormatState, SimpleFormatOptions, VecBuffer};
+    use crate::base_formatter::builders::*;
+    use crate::base_formatter::formatter::Formatter;
+    use crate::base_formatter::{
+        Format, FormatElement, FormatResult, FormatState, Formatted, SimpleFormatContext,
+        SimpleFormatOptions, VecBuffer,
+    };
     use crate::write;
 
     struct TestFormat;
@@ -388,10 +392,6 @@ mod tests {
 
     #[test]
     fn best_fitting_variants_print_as_lists() {
-        use crate::base_formatter::Formatted;
-        use crate::base_formatter::prelude::*;
-        use crate::{format, format_args};
-
         // The second variant below should be selected when printing at a width of 30
         let formatted_best_fitting = format!(
             SimpleFormatContext::default(),

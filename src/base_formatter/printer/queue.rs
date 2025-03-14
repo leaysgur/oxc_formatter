@@ -1,5 +1,4 @@
-use crate::base_formatter::format_element::tag::TagKind;
-use crate::base_formatter::prelude::Tag;
+use crate::base_formatter::format_element::tag::{Tag, TagKind};
 use crate::base_formatter::printer::stack::{Stack, StackedStack};
 use crate::base_formatter::printer::{invalid_end_tag, invalid_start_tag};
 use crate::base_formatter::{FormatElement, PrintResult};
@@ -342,7 +341,7 @@ impl FitsEndPredicate for SingleEntryPredicate {
 mod tests {
     use crate::base_formatter::FormatElement;
     use crate::base_formatter::format_element::LineMode;
-    use crate::base_formatter::prelude::Tag;
+    use crate::base_formatter::format_element::tag::Tag;
     use crate::base_formatter::printer::queue::{PrintQueue, Queue};
 
     #[test]

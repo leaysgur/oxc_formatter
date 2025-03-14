@@ -128,9 +128,10 @@ impl<'fmt, Context> From<&'fmt Argument<'fmt, Context>> for Arguments<'fmt, Cont
 
 #[cfg(test)]
 mod tests {
-    use crate::base_formatter::format_element::tag::Tag;
-    use crate::base_formatter::prelude::*;
-    use crate::base_formatter::{FormatState, VecBuffer};
+    use crate::base_formatter::format_element::tag;
+    use crate::base_formatter::format_element::tag::*;
+    use crate::base_formatter::builders::*;
+    use crate::base_formatter::{FormatState, VecBuffer, FormatElement};
     use crate::{format_args, write};
 
     #[test]

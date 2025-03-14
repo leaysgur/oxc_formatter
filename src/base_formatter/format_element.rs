@@ -1,10 +1,8 @@
 pub mod document;
 pub mod tag;
 
-use crate::base_formatter::format_element::tag::{LabelId, Tag};
+use crate::base_formatter::format_element::tag::{LabelId, Tag, TagKind};
 use std::borrow::Cow;
-
-use crate::base_formatter::{TagKind, TextSize};
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::rc::Rc;
@@ -208,8 +206,7 @@ impl FormatElement {
     pub const fn is_text(&self) -> bool {
         matches!(
             self,
-                FormatElement::DynamicText { .. }
-                | FormatElement::StaticText { .. }
+            FormatElement::DynamicText { .. } | FormatElement::StaticText { .. }
         )
     }
 
