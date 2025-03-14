@@ -1,3 +1,6 @@
+// This is `base_formatter` macros.
+// But this should be placed here to avoid name conflicts with `write` macro and `base_formatter::write` function.
+
 /// Constructs the parameters for other formatting macros.
 ///
 /// This macro functions by taking a list of objects implementing [crate::base_formatter::Format]. It canonicalize the
