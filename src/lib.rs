@@ -183,15 +183,13 @@ mod syntax_rewriter;
 use base_formatter::format_element::tag::Label;
 use base_formatter::prelude::*;
 use base_formatter::{Buffer, FormatOwnedWithRule, FormatRefWithRule, Formatted, Printed};
-use base_formatter::{
-    CstFormatContext, Format, FormatLanguage, 
-};
+use base_formatter::{CstFormatContext, Format, FormatLanguage};
 
-use crate::write;
 use crate::comments::JsCommentStyle;
 use crate::context::{JsFormatContext, JsFormatOptions};
 use crate::cst::FormatJsSyntaxNode;
 use crate::syntax_rewriter::transform;
+use crate::write;
 
 /// Used to get an object that knows how to format this object.
 pub(crate) trait AsFormat<Context> {
@@ -507,7 +505,68 @@ pub fn format_node(
     options: JsFormatOptions,
     root: &JsSyntaxNode,
 ) -> FormatResult<Formatted<JsFormatContext>> {
-    base_formatter::format_node(root, JsFormatLanguage::new(options))
+    let (root, source_map) = match language.transform(&root.clone()) {
+        Some((transformed, source_map)) => {
+            // we don't need to insert the node back if it has the same offset
+            if &transformed == root {
+                (transformed, Some(source_map))
+            } else {
+                match root
+                    .ancestors()
+                    // ancestors() always returns self as the first element of the iterator.
+                    .skip(1)
+                    .last()
+                {
+                    // current root node is the topmost node we don't need to insert the transformed node back
+                    None => (transformed, Some(source_map)),
+                    Some(top_root) => {
+                        // we have to return transformed node back into subtree
+                        let transformed_range = transformed.text_range_with_trivia();
+                        let root_range = root.text_range_with_trivia();
+
+                        let transformed_root = top_root
+                            .replace_child(root.clone().into(), transformed.into())
+                            // SAFETY: Calling `unwrap` is safe because we know that `root` is part of the `top_root` subtree.
+                            .unwrap();
+                        let transformed = transformed_root.covering_element(TextRange::new(
+                            root_range.start(),
+                            root_range.start() + transformed_range.len(),
+                        ));
+
+                        let node = match transformed {
+                            NodeOrToken::Node(node) => node,
+                            NodeOrToken::Token(token) => {
+                                // if we get a token we need to get the parent node
+                                token.parent().unwrap_or(transformed_root)
+                            }
+                        };
+
+                        (node, Some(source_map))
+                    }
+                }
+            }
+        }
+        None => (root.clone(), None),
+    };
+
+    let context = language.create_context(&root);
+    let format_node = FormatRefWithRule::new(&root, L::FormatRule::default());
+
+    let mut state = FormatState::new(context);
+    let mut buffer = VecBuffer::new(&mut state);
+
+    crate::write!(buffer, [format_node])?;
+
+    let mut document = Document::from(buffer.into_vec());
+    document.propagate_expand();
+
+    let context = state.into_context();
+    // let comments = context.comments();
+
+    // comments.assert_checked_all_suppressions(&root);
+    // comments.assert_formatted_all_comments();
+
+    Ok(Formatted::new(document, context))
 }
 
 #[derive(Copy, Clone, Debug)]
