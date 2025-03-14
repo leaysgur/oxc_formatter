@@ -157,7 +157,7 @@
 //!     called `"Unimplemented tokens/nodes"`; a test, in order to be valid, can't have that section;
 //!
 //! If removing a token is the actual behaviour (removing some parenthesis or a semicolon), then the correct way
-//! to do it by using the formatter API [forrmatter::trivia::format_removed];
+//! to do it by using the formatter API [base_formatter::trivia::format_removed];
 //! - the emitted code is not a valid program anymore, the test suite will parse again the emitted code and it will
 //!     fail if there are syntax errors;
 //! - the emitted code, when formatted again, differs from the original; this usually happens when removing/adding new
@@ -166,9 +166,9 @@
 mod cst;
 // mod js;
 // mod jsx;
-mod prelude;
-mod macros;
 mod base_formatter;
+mod macros;
+mod prelude;
 // mod ts;
 // pub mod utils;
 
@@ -184,10 +184,10 @@ use base_formatter::format_element::tag::Label;
 use base_formatter::prelude::*;
 use base_formatter::{Buffer, FormatOwnedWithRule, FormatRefWithRule, Formatted, Printed};
 use base_formatter::{
-    CstFormatContext, Format, FormatLanguage, FormatToken, TransformSourceMap, comments::Comments,
-    write,
+    CstFormatContext, Format, FormatLanguage, 
 };
 
+use crate::write;
 use crate::comments::JsCommentStyle;
 use crate::context::{JsFormatContext, JsFormatOptions};
 use crate::cst::FormatJsSyntaxNode;
@@ -259,7 +259,7 @@ where
 ///
 /// The difference to [AsFormat] is that this trait takes ownership of `self`.
 pub(crate) trait IntoFormat<Context> {
-    type Format: forrmatter::Format<Context>;
+    type Format: base_formatter::Format<Context>;
 
     fn into_format(self) -> Self::Format;
 }
@@ -389,7 +389,7 @@ where
         f.context().comments().is_suppressed(node.syntax())
     }
 
-    /// Formats the [leading comments](forrmatter::comments#leading-comments) of the node.
+    /// Formats the [leading comments](base_formatter::comments#leading-comments) of the node.
     ///
     /// You may want to override this method if you want to manually handle the formatting of comments
     /// inside of the `fmt_fields` method or customize the formatting of the leading comments.
@@ -397,7 +397,7 @@ where
         format_leading_comments(node.syntax()).fmt(f)
     }
 
-    /// Formats the [dangling comments](forrmatter::comments#dangling-comments) of the node.
+    /// Formats the [dangling comments](base_formatter::comments#dangling-comments) of the node.
     ///
     /// You should override this method if the node handled by this rule can have dangling comments because the
     /// default implementation formats the dangling comments at the end of the node, which isn't ideal but ensures that
@@ -410,7 +410,7 @@ where
             .fmt(f)
     }
 
-    /// Formats the [trailing comments](forrmatter::comments#trailing-comments) of the node.
+    /// Formats the [trailing comments](base_formatter::comments#trailing-comments) of the node.
     ///
     /// You may want to override this method if you want to manually handle the formatting of comments
     /// inside of the `fmt_fields` method or customize the formatting of the trailing comments.
@@ -500,25 +500,6 @@ impl FormatLanguage for JsFormatLanguage {
     }
 }
 
-/// Formats a range within a file, supported by Biome
-///
-/// This runs a simple heuristic to determine the initial indentation
-/// level of the node based on the provided [JsFormatContext], which
-/// must match currently the current initial of the file. Additionally,
-/// because the reformatting happens only locally the resulting code
-/// will be indented with the same level as the original selection,
-/// even if it's a mismatch from the rest of the block the selection is in
-///
-/// It returns a [Formatted] result with a range corresponding to the
-/// range of the input that was effectively overwritten by the formatter
-pub fn format_range(
-    options: JsFormatOptions,
-    root: &JsSyntaxNode,
-    range: TextRange,
-) -> FormatResult<Printed> {
-    forrmatter::format_range(root, range, JsFormatLanguage::new(options))
-}
-
 /// Formats a JavaScript (and its super languages) file based on its features.
 ///
 /// It returns a [Formatted] result, which the user can use to override a file.
@@ -526,21 +507,7 @@ pub fn format_node(
     options: JsFormatOptions,
     root: &JsSyntaxNode,
 ) -> FormatResult<Formatted<JsFormatContext>> {
-    forrmatter::format_node(root, JsFormatLanguage::new(options))
-}
-
-/// Formats a single node within a file, supported by Biome.
-///
-/// This runs a simple heuristic to determine the initial indentation
-/// level of the node based on the provided [JsFormatContext], which
-/// must match currently the current initial of the file. Additionally,
-/// because the reformatting happens only locally the resulting code
-/// will be indented with the same level as the original selection,
-/// even if it's a mismatch from the rest of the block the selection is in
-///
-/// It returns a [Formatted] result
-pub fn format_sub_tree(options: JsFormatOptions, root: &JsSyntaxNode) -> FormatResult<Printed> {
-    forrmatter::format_sub_tree(root, JsFormatLanguage::new(options))
+    base_formatter::format_node(root, JsFormatLanguage::new(options))
 }
 
 #[derive(Copy, Clone, Debug)]
