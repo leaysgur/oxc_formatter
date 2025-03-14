@@ -1,95 +1,26 @@
-pub mod trailing_commas;
-
-use crate::comments::{FormatJsLeadingComment, JsCommentStyle, JsComments};
-use biome_deserialize_macros::{Deserializable, Merge};
-use biome_formatter::printer::PrinterOptions;
-use biome_formatter::{
-    AttributePosition, BracketSameLine, BracketSpacing, CstFormatContext, Expand, FormatContext,
-    FormatElement, FormatOptions, IndentStyle, IndentWidth, LineEnding, LineWidth, QuoteStyle,
-    TransformSourceMap,
+use crate::base_formatter::printer::PrinterOptions;
+use crate::base_formatter::{
+    AttributePosition, BracketSameLine, BracketSpacing, Expand, FormatContext, FormatOptions,
+    IndentStyle, IndentWidth, LineEnding, LineWidth, QuoteStyle,
+    Format, FormatResult,
 };
-use biome_js_syntax::{AnyJsFunctionBody, JsFileSource, JsLanguage};
+use crate::prelude::*;
 use std::fmt;
 use std::fmt::Debug;
-use std::rc::Rc;
 use std::str::FromStr;
-pub use trailing_commas::TrailingCommas;
 
 #[derive(Debug, Clone)]
 pub struct JsFormatContext {
     options: JsFormatOptions,
-
-    /// The comments of the nodes and tokens in the program.
-    comments: Rc<JsComments>,
-
-    /// Stores the formatted content of one function body.
-    ///
-    /// Used during formatting of call arguments where function expressions and arrow function expressions
-    /// are formatted a second time if they are the first or last call argument.
-    ///
-    /// Caching the body in the call arguments formatting is important. It minimises the cases
-    /// where the algorithm is quadratic, in case the function or arrow expression contains another
-    /// call expression with a function or call expression as first or last argument.
-    ///
-    /// It's sufficient to only store a single cached body to cover the vast majority of cases
-    /// (there's no exception in any of our tests nor benchmark tests). The only case not covered is when
-    /// a parameter has an initializer that contains a call expression:
-    ///
-    /// ```javascript
-    ///  test((
-    ///    problematic = test(() => body)
-    ///  ) => {});
-    ///  ```
-    ///
-    /// This should be rare enough for us not to care about it.
-    cached_function_body: Option<(AnyJsFunctionBody, FormatElement)>,
-
-    source_map: Option<TransformSourceMap>,
+    // /// The comments of the nodes and tokens in the program.
+    // comments: Rc<JsComments>,
+    // cached_function_body: Option<(AnyJsFunctionBody, FormatElement)>,
+    // source_map: Option<TransformSourceMap>,
 }
 
 impl JsFormatContext {
-    pub fn new(options: JsFormatOptions, comments: JsComments) -> Self {
-        Self {
-            options,
-            comments: Rc::new(comments),
-            cached_function_body: None,
-            source_map: None,
-        }
-    }
-
-    /// Returns the formatted content for the passed function body if it is cached or `None` if the currently
-    /// cached content belongs to another function body or the cache is empty.
-    ///
-    /// See [JsFormatContext::cached_function_body] for more in depth documentation.
-    pub(crate) fn get_cached_function_body(
-        &self,
-        body: &AnyJsFunctionBody,
-    ) -> Option<FormatElement> {
-        self.cached_function_body
-            .as_ref()
-            .and_then(|(expected_body, formatted)| {
-                if expected_body == body {
-                    Some(formatted.clone())
-                } else {
-                    None
-                }
-            })
-    }
-
-    /// Sets the currently cached formatted function body.
-    ///
-    /// See [JsFormatContext::cached_function_body] for more in depth documentation.
-    pub(crate) fn set_cached_function_body(
-        &mut self,
-        body: &AnyJsFunctionBody,
-        formatted: FormatElement,
-    ) {
-        self.cached_function_body = Some((body.clone(), formatted))
-    }
-
-    pub fn with_source_map(mut self, source_map: Option<TransformSourceMap>) -> Self {
-        self.source_map = source_map;
-        self
+    pub fn new(options: JsFormatOptions) -> Self {
+        Self { options }
     }
 }
 
@@ -113,20 +44,6 @@ impl FormatContext for JsFormatContext {
 
     fn options(&self) -> &Self::Options {
         &self.options
-    }
-
-    fn source_map(&self) -> Option<&TransformSourceMap> {
-        self.source_map.as_ref()
-    }
-}
-
-impl CstFormatContext for JsFormatContext {
-    type Language = JsLanguage;
-    type Style = JsCommentStyle;
-    type CommentRule = FormatJsLeadingComment;
-
-    fn comments(&self) -> &JsComments {
-        &self.comments
     }
 }
 
@@ -168,9 +85,6 @@ pub struct JsFormatOptions {
     /// Whether to hug the closing bracket of multiline HTML/JSX tags to the end of the last line, rather than being alone on the following line. Defaults to false.
     bracket_same_line: BracketSameLine,
 
-    /// Information related to the current file
-    source_type: JsFileSource,
-
     /// Attribute position style. By default auto.
     attribute_position: AttributePosition,
 
@@ -179,9 +93,8 @@ pub struct JsFormatOptions {
 }
 
 impl JsFormatOptions {
-    pub fn new(source_type: JsFileSource) -> Self {
+    pub fn new() -> Self {
         Self {
-            source_type,
             indent_style: IndentStyle::default(),
             indent_width: IndentWidth::default(),
             line_ending: LineEnding::default(),
@@ -349,10 +262,6 @@ impl JsFormatOptions {
         self.quote_properties
     }
 
-    pub fn source_type(&self) -> JsFileSource {
-        self.source_type
-    }
-
     pub fn trailing_commas(&self) -> TrailingCommas {
         self.trailing_commas
     }
@@ -415,13 +324,7 @@ impl fmt::Display for JsFormatOptions {
     }
 }
 
-#[derive(Clone, Copy, Debug, Default, Deserializable, Eq, Hash, Merge, PartialEq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(rename_all = "camelCase")
-)]
-#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 pub enum QuoteProperties {
     #[default]
     AsNeeded,
@@ -450,13 +353,7 @@ impl fmt::Display for QuoteProperties {
     }
 }
 
-#[derive(Clone, Copy, Debug, Default, Deserializable, Eq, Hash, Merge, PartialEq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(rename_all = "camelCase")
-)]
-#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 pub enum Semicolons {
     #[default]
     Always,
@@ -496,13 +393,7 @@ impl fmt::Display for Semicolons {
     }
 }
 
-#[derive(Clone, Copy, Debug, Default, Deserializable, Eq, Hash, Merge, PartialEq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(rename_all = "camelCase")
-)]
-#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 pub enum ArrowParentheses {
     #[default]
     Always,
@@ -539,6 +430,114 @@ impl fmt::Display for ArrowParentheses {
         match self {
             ArrowParentheses::AsNeeded => write!(f, "As needed"),
             ArrowParentheses::Always => write!(f, "Always"),
+        }
+    }
+}
+
+/// This enum is used within formatting functions to print or omit trailing commas.
+#[derive(Debug, Copy, Clone)]
+pub(crate) enum FormatTrailingCommas {
+    /// Print trailing commas if the option is [TrailingCommas::All].
+    All,
+    /// Print trailing commas if the option is [TrailingCommas::All] or [TrailingCommas::Es5].
+    ES5,
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Default)]
+pub enum TrailingSeparator {
+    /// A trailing separator is allowed and preferred
+    #[default]
+    Allowed,
+
+    /// A trailing separator is not allowed
+    Disallowed,
+
+    /// A trailing separator is mandatory for the syntax to be correct
+    Mandatory,
+
+    /// A trailing separator might be present, but the consumer
+    /// decides to remove it
+    Omit,
+}
+
+impl FormatTrailingCommas {
+    /// This function returns corresponding [TrailingSeparator] for [format_separated] function.
+    pub fn trailing_separator(&self, options: &JsFormatOptions) -> TrailingSeparator {
+        if options.trailing_commas.is_none() {
+            return TrailingSeparator::Omit;
+        }
+
+        match self {
+            FormatTrailingCommas::All => {
+                if options.trailing_commas.is_all() {
+                    TrailingSeparator::Allowed
+                } else {
+                    TrailingSeparator::Omit
+                }
+            }
+            FormatTrailingCommas::ES5 => TrailingSeparator::Allowed,
+        }
+    }
+}
+
+impl Format<JsFormatContext> for FormatTrailingCommas {
+    fn fmt(&self, f: &mut Formatter<JsFormatContext>) -> FormatResult<()> {
+        if f.options().trailing_commas.is_none() {
+            return Ok(());
+        }
+
+        if matches!(self, FormatTrailingCommas::ES5) || f.options().trailing_commas().is_all() {
+            write!(f, [if_group_breaks(&text(","))])?
+        }
+
+        Ok(())
+    }
+}
+
+/// Print trailing commas wherever possible in multi-line comma-separated syntactic structures.
+#[derive(Clone, Copy, Default, Debug, Eq, Hash, PartialEq)]
+pub enum TrailingCommas {
+    /// Trailing commas wherever possible (including function parameters and calls).
+    #[default]
+    All,
+    /// Trailing commas where valid in ES5 (objects, arrays, etc.). No trailing commas in type parameters in TypeScript.
+    Es5,
+    /// No trailing commas.
+    None,
+}
+
+impl TrailingCommas {
+    pub const fn is_es5(&self) -> bool {
+        matches!(self, TrailingCommas::Es5)
+    }
+    pub const fn is_all(&self) -> bool {
+        matches!(self, TrailingCommas::All)
+    }
+    pub const fn is_none(&self) -> bool {
+        matches!(self, TrailingCommas::None)
+    }
+}
+
+impl FromStr for TrailingCommas {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "es5" => Ok(Self::Es5),
+            "all" => Ok(Self::All),
+            "none" => Ok(Self::None),
+            // TODO: replace this error with a diagnostic
+            _ => Err("Value not supported for TrailingCommas"),
+        }
+    }
+}
+
+impl fmt::Display for TrailingCommas {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TrailingCommas::Es5 => std::write!(f, "ES5"),
+            TrailingCommas::All => std::write!(f, "All"),
+            TrailingCommas::None => std::write!(f, "None"),
         }
     }
 }

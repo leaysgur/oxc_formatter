@@ -163,7 +163,6 @@
 //! - the emitted code, when formatted again, differs from the original; this usually happens when removing/adding new
 //!     elements, and the grouping is not correctly set;
 
-mod cst;
 // mod js;
 // mod jsx;
 mod base_formatter;
@@ -174,22 +173,14 @@ mod prelude;
 
 #[rustfmt::skip]
 mod generated;
-pub mod comments;
 pub mod context;
-mod parentheses;
-pub(crate) mod separated;
-mod syntax_rewriter;
 
+use base_formatter::Format;
 use base_formatter::format_element::tag::Label;
 use base_formatter::prelude::*;
-use base_formatter::{Buffer, FormatOwnedWithRule, FormatRefWithRule, Formatted, Printed};
-use base_formatter::{CstFormatContext, Format, FormatLanguage};
+use base_formatter::{Buffer, FormatOwnedWithRule, FormatRefWithRule, Formatted};
 
-use crate::comments::JsCommentStyle;
 use crate::context::{JsFormatContext, JsFormatOptions};
-use crate::cst::FormatJsSyntaxNode;
-use crate::syntax_rewriter::transform;
-use crate::write;
 
 /// Used to get an object that knows how to format this object.
 pub(crate) trait AsFormat<Context> {
@@ -213,26 +204,6 @@ where
 
     fn format(&self) -> Self::Format<'_> {
         AsFormat::format(&**self)
-    }
-}
-
-/// Implement [AsFormat] for [SyntaxResult] where `T` implements [AsFormat].
-///
-/// Useful to format mandatory AST fields without having to unwrap the value first.
-impl<T, C> AsFormat<C> for biome_rowan::SyntaxResult<T>
-where
-    T: AsFormat<C>,
-{
-    type Format<'a>
-        = biome_rowan::SyntaxResult<T::Format<'a>>
-    where
-        Self: 'a;
-
-    fn format(&self) -> Self::Format<'_> {
-        match self {
-            Ok(value) => Ok(value.format()),
-            Err(err) => Err(*err),
-        }
     }
 }
 
@@ -260,17 +231,6 @@ pub(crate) trait IntoFormat<Context> {
     type Format: base_formatter::Format<Context>;
 
     fn into_format(self) -> Self::Format;
-}
-
-impl<T, Context> IntoFormat<Context> for biome_rowan::SyntaxResult<T>
-where
-    T: IntoFormat<Context>,
-{
-    type Format = biome_rowan::SyntaxResult<T::Format>;
-
-    fn into_format(self) -> Self::Format {
-        self.map(IntoFormat::into_format)
-    }
 }
 
 /// Implement [IntoFormat] for [Option] when `T` implements [IntoFormat]
@@ -384,7 +344,8 @@ where
 
     /// Returns `true` if the node has a suppression comment and should use the same formatting as in the source document.
     fn is_suppressed(&self, node: &N, f: &JsFormatter) -> bool {
-        f.context().comments().is_suppressed(node.syntax())
+        // f.context().comments().is_suppressed(node.syntax())
+        false // TODO
     }
 
     /// Formats the [leading comments](base_formatter::comments#leading-comments) of the node.
@@ -392,7 +353,8 @@ where
     /// You may want to override this method if you want to manually handle the formatting of comments
     /// inside of the `fmt_fields` method or customize the formatting of the leading comments.
     fn fmt_leading_comments(&self, node: &N, f: &mut JsFormatter) -> FormatResult<()> {
-        format_leading_comments(node.syntax()).fmt(f)
+        // format_leading_comments(node.syntax()).fmt(f)
+        Ok((/* TODO */))
     }
 
     /// Formats the [dangling comments](base_formatter::comments#dangling-comments) of the node.
@@ -403,9 +365,10 @@ where
     ///
     /// A node can have dangling comments if all its children are tokens or if all node childrens are optional.
     fn fmt_dangling_comments(&self, node: &N, f: &mut JsFormatter) -> FormatResult<()> {
-        format_dangling_comments(node.syntax())
-            .with_soft_block_indent()
-            .fmt(f)
+        // format_dangling_comments(node.syntax())
+        //     .with_soft_block_indent()
+        //     .fmt(f)
+        Ok((/* TODO */))
     }
 
     /// Formats the [trailing comments](base_formatter::comments#trailing-comments) of the node.
@@ -413,7 +376,8 @@ where
     /// You may want to override this method if you want to manually handle the formatting of comments
     /// inside of the `fmt_fields` method or customize the formatting of the trailing comments.
     fn fmt_trailing_comments(&self, node: &N, f: &mut JsFormatter) -> FormatResult<()> {
-        format_trailing_comments(node.syntax()).fmt(f)
+        // format_trailing_comments(node.syntax()).fmt(f)
+        Ok((/* TODO */))
     }
 }
 
