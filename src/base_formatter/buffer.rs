@@ -1,8 +1,8 @@
 #![expect(clippy::mutable_key_type)]
 use super::{Arguments, FormatElement, write};
 use crate::base_formatter::format_element::tag::Tag;
-use crate::base_formatter::format_element::{tag::Condition, Interned};
 use crate::base_formatter::format_element::*;
+use crate::base_formatter::format_element::{Interned, tag::Condition};
 use crate::base_formatter::{FormatResult, FormatState};
 use rustc_hash::FxHashMap;
 use std::any::{Any, TypeId};

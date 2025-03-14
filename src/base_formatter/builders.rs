@@ -1,4 +1,6 @@
-use crate::base_formatter::format_element::tag::{Condition, Tag::*, LabelId, DedentMode, GroupMode};
+use crate::base_formatter::format_element::tag::{
+    Condition, DedentMode, GroupMode, LabelId, Tag::*,
+};
 use crate::base_formatter::format_element::*;
 use crate::base_formatter::{
     Argument, Arguments, Format, FormatResult, Formatter, GroupId, format_element,

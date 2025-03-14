@@ -1,12 +1,11 @@
+use crate::base_formatter::builders::{if_group_breaks, text};
 use crate::base_formatter::formatter::Formatter;
 use crate::base_formatter::printer::PrinterOptions;
-use crate::base_formatter::builders::{if_group_breaks, text};
-use crate::write;
 use crate::base_formatter::{
-    AttributePosition, BracketSameLine, BracketSpacing, Expand, FormatContext, FormatOptions,
-    IndentStyle, IndentWidth, LineEnding, LineWidth, QuoteStyle,
-    FormatResult, Format
+    AttributePosition, BracketSameLine, BracketSpacing, Expand, Format, FormatContext,
+    FormatOptions, FormatResult, IndentStyle, IndentWidth, LineEnding, LineWidth, QuoteStyle,
 };
+use crate::write;
 use std::fmt;
 use std::fmt::Debug;
 use std::str::FromStr;

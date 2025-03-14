@@ -344,7 +344,7 @@ mod tests {
         Format, FormatElement, FormatResult, FormatState, Formatted, SimpleFormatContext,
         SimpleFormatOptions, VecBuffer,
     };
-    use crate::{write, format};
+    use crate::{format, write};
 
     struct TestFormat;
 

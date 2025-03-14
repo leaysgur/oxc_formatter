@@ -1331,12 +1331,12 @@ struct FitsState {
 
 #[cfg(test)]
 mod tests {
-    use crate::base_formatter::builders::*;
     use crate::base_formatter::LineEnding;
+    use crate::base_formatter::builders::*;
     use crate::base_formatter::printer::{PrintWidth, Printer, PrinterOptions};
     use crate::base_formatter::{
-        Document, Format, FormatState, IndentStyle, Printed, SimpleFormatContext, VecBuffer,
-        Formatter, FormatResult
+        Document, Format, FormatResult, FormatState, Formatter, IndentStyle, Printed,
+        SimpleFormatContext, VecBuffer,
     };
     use crate::{format_args, write};
 
