@@ -1,15 +1,15 @@
+use crate::base_formatter::format_element::tag::{
+    Condition, DedentMode, GroupMode, LabelId, Tag::*,
+};
+use crate::base_formatter::format_element::*;
+use crate::base_formatter::{
+    Argument, Arguments, Format, FormatResult, Formatter, GroupId, format_element,
+};
+use crate::base_formatter::{Buffer, VecBuffer};
+use crate::write;
 use std::cell::Cell;
 use std::marker::PhantomData;
 use std::num::NonZeroU8;
-
-use crate::arguments::{Argument, Arguments};
-use crate::buffer::{Buffer, BufferExtensions, VecBuffer};
-use crate::format::Format;
-use crate::format_element::tag::{Condition, DedentMode, GroupMode, LabelId, Tag::*};
-use crate::format_element::*;
-use crate::formatter::Formatter;
-use crate::group_id::GroupId;
-use crate::write;
 
 /// A line break that only gets printed if the enclosing `Group` doesn't fit on a single line.
 /// It's omitted if the enclosing `Group` fits on a single line.
@@ -23,10 +23,10 @@ use crate::write;
 /// use biome_formatter::{format, format_args};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let elements = format!(SimpleFormatContext::default(), [
 ///     group(&format_args![text("a,"), soft_line_break(), text("b")])
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "a,b",
@@ -43,7 +43,7 @@ use crate::write;
 /// use biome_formatter::{format, format_args, LineWidth, SimpleFormatOptions};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let context = SimpleFormatContext::new(SimpleFormatOptions {
 ///     line_width: LineWidth::try_from(10).unwrap(),
 ///     ..SimpleFormatOptions::default()
@@ -55,7 +55,7 @@ use crate::write;
 ///         soft_line_break(),
 ///         text("so that the group doesn't fit on a single line"),
 ///     ])
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "a long word,\nso that the group doesn't fit on a single line",
@@ -79,7 +79,7 @@ pub const fn soft_line_break() -> Line {
 /// use biome_formatter::{format, format_args};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let elements = format!(SimpleFormatContext::default(), [
 ///     group(&format_args![
 ///         text("a,"),
@@ -87,7 +87,7 @@ pub const fn soft_line_break() -> Line {
 ///         text("b"),
 ///         hard_line_break()
 ///     ])
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "a,\nb\n",
@@ -110,7 +110,7 @@ pub const fn hard_line_break() -> Line {
 /// use biome_formatter::{format, format_args};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// fn main() -> FormatResult<()> {
 /// let elements = format!(
 ///     SimpleFormatContext::default(), [
 ///     group(&format_args![
@@ -119,7 +119,7 @@ pub const fn hard_line_break() -> Line {
 ///         text("b"),
 ///         empty_line()
 ///     ])
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "a,\n\nb\n\n",
@@ -142,14 +142,14 @@ pub const fn empty_line() -> Line {
 /// use biome_formatter::{format, format_args};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let elements = format!(SimpleFormatContext::default(), [
 ///     group(&format_args![
 ///         text("a,"),
 ///         soft_line_break_or_space(),
 ///         text("b"),
 ///     ])
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "a, b",
@@ -164,7 +164,7 @@ pub const fn empty_line() -> Line {
 /// use biome_formatter::{format_args, format, LineWidth, SimpleFormatOptions};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let context = SimpleFormatContext::new(SimpleFormatOptions {
 ///     line_width: LineWidth::try_from(10).unwrap(),
 ///     ..SimpleFormatOptions::default()
@@ -176,7 +176,7 @@ pub const fn empty_line() -> Line {
 ///         soft_line_break_or_space(),
 ///         text("so that the group doesn't fit on a single line"),
 ///     ])
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "a long word,\nso that the group doesn't fit on a single line",
@@ -201,9 +201,9 @@ impl Line {
     }
 }
 
-impl Format for Line {
-    fn fmt(&self, f: &mut Formatter) {
-        f.write_element(FormatElement::Line(self.mode));
+impl<Context> Format<Context> for Line {
+    fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
+        f.write_element(FormatElement::Line(self.mode))
     }
 }
 
@@ -218,7 +218,7 @@ impl std::fmt::Debug for Line {
 ///
 /// # Line feeds
 /// Tokens may contain line breaks but they must use the line feeds (`\n`).
-/// The [crate::Printer] converts the line feed characters to the character specified in the [crate::PrinterOptions].
+/// The [crate::base_formatter::Printer] converts the line feed characters to the character specified in the [crate::base_formatter::PrinterOptions].
 ///
 /// # Examples
 ///
@@ -226,8 +226,8 @@ impl std::fmt::Debug for Line {
 /// use biome_formatter::format;
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
-/// let elements = format!(SimpleFormatContext::default(), [text("Hello World")]);
+/// # fn main() -> FormatResult<()> {
+/// let elements = format!(SimpleFormatContext::default(), [text("Hello World")])?;
 ///
 /// assert_eq!(
 ///     "Hello World",
@@ -244,9 +244,9 @@ impl std::fmt::Debug for Line {
 /// use biome_formatter::format;
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// // the tab must be encoded as \\t to not literally print a tab character ("Hello{tab}World" vs "Hello\tWorld")
-/// let elements = format!(SimpleFormatContext::default(), [text("\"Hello\\tWorld\"")]);
+/// let elements = format!(SimpleFormatContext::default(), [text("\"Hello\\tWorld\"")])?;
 ///
 /// assert_eq!(r#""Hello\tWorld""#, elements.print()?.as_code());
 /// # Ok(())
@@ -264,9 +264,9 @@ pub struct StaticText {
     text: &'static str,
 }
 
-impl Format for StaticText {
-    fn fmt(&self, f: &mut Formatter) {
-        f.write_element(FormatElement::StaticText { text: self.text });
+impl<Context> Format<Context> for StaticText {
+    fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
+        f.write_element(FormatElement::StaticText { text: self.text })
     }
 }
 
@@ -288,8 +288,8 @@ pub struct DynamicText<'a> {
     text: &'a str,
 }
 
-impl Format for DynamicText<'_> {
-    fn fmt(&self, f: &mut Formatter) {
+impl<Context> Format<Context> for DynamicText<'_> {
+    fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         f.write_element(FormatElement::DynamicText {
             text: self.text.to_string().into_boxed_str(),
         })
@@ -317,12 +317,12 @@ fn debug_assert_no_newlines(text: &str) {
 /// use biome_formatter::{format};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// fn main() -> FormatResult<()> {
 /// let elements = format!(SimpleFormatContext::default(), [
 ///     text("a"),
 ///     line_suffix(&text("c")),
 ///     text("b")
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "abc",
@@ -332,9 +332,9 @@ fn debug_assert_no_newlines(text: &str) {
 /// # }
 /// ```
 #[inline]
-pub fn line_suffix<Content>(inner: &Content) -> LineSuffix
+pub fn line_suffix<Content, Context>(inner: &Content) -> LineSuffix<Context>
 where
-    Content: Format,
+    Content: Format<Context>,
 {
     LineSuffix {
         content: Argument::new(inner),
@@ -342,19 +342,19 @@ where
 }
 
 #[derive(Copy, Clone)]
-pub struct LineSuffix<'a> {
-    content: Argument<'a>,
+pub struct LineSuffix<'a, Context> {
+    content: Argument<'a, Context>,
 }
 
-impl Format for LineSuffix<'_> {
-    fn fmt(&self, f: &mut Formatter) {
-        f.write_element(FormatElement::Tag(StartLineSuffix));
-        Arguments::from(&self.content).fmt(f);
+impl<Context> Format<Context> for LineSuffix<'_, Context> {
+    fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
+        f.write_element(FormatElement::Tag(StartLineSuffix))?;
+        Arguments::from(&self.content).fmt(f)?;
         f.write_element(FormatElement::Tag(EndLineSuffix))
     }
 }
 
-impl std::fmt::Debug for LineSuffix<'_> {
+impl<Context> std::fmt::Debug for LineSuffix<'_, Context> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("LineSuffix").field(&"{{content}}").finish()
     }
@@ -370,14 +370,14 @@ impl std::fmt::Debug for LineSuffix<'_> {
 /// use biome_formatter::format;
 /// use biome_formatter::prelude::*;
 ///
-/// # fn  main()  {
+/// # fn  main() -> FormatResult<()> {
 /// let elements = format!(SimpleFormatContext::default(), [
 ///     text("a"),
 ///     line_suffix(&text("c")),
 ///     text("b"),
 ///     line_suffix_boundary(),
 ///     text("d")
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "abc\nd",
@@ -393,8 +393,8 @@ pub const fn line_suffix_boundary() -> LineSuffixBoundary {
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct LineSuffixBoundary;
 
-impl Format for LineSuffixBoundary {
-    fn fmt(&self, f: &mut Formatter) {
+impl<Context> Format<Context> for LineSuffixBoundary {
+    fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         f.write_element(FormatElement::LineSuffixBoundary)
     }
 }
@@ -428,7 +428,7 @@ impl Format for LineSuffixBoundary {
 ///     }
 /// }
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let formatted = format!(
 ///     SimpleFormatContext::default(),
 ///     [format_with(|f| {
@@ -438,7 +438,7 @@ impl Format for LineSuffixBoundary {
 ///                 LabelId::of(MyLabels::Main),
 ///                 &text("'I have a label'")
 ///             )
-///         ]);
+///         ])?;
 ///
 ///         let recorded = recording.stop();
 ///
@@ -450,7 +450,7 @@ impl Format for LineSuffixBoundary {
 ///             write!(f, [text(" doesn't have label `Main`")])
 ///         }
 ///     })]
-/// );
+/// )?;
 ///
 /// assert_eq!("'I have a label' has label `Main`", formatted.print()?.as_code());
 /// # Ok(())
@@ -462,9 +462,9 @@ impl Format for LineSuffixBoundary {
 /// Use `Memoized.inspect(f)?.has_label(LabelId::of(MyLabels::Main)` if you need to know if some content breaks that should
 /// only be written later.
 #[inline]
-pub fn labelled<Content>(label_id: LabelId, content: &Content) -> FormatLabelled
+pub fn labelled<Content, Context>(label_id: LabelId, content: &Content) -> FormatLabelled<Context>
 where
-    Content: Format,
+    Content: Format<Context>,
 {
     FormatLabelled {
         label_id,
@@ -473,20 +473,20 @@ where
 }
 
 #[derive(Copy, Clone)]
-pub struct FormatLabelled<'a> {
+pub struct FormatLabelled<'a, Context> {
     label_id: LabelId,
-    content: Argument<'a>,
+    content: Argument<'a, Context>,
 }
 
-impl Format for FormatLabelled<'_> {
-    fn fmt(&self, f: &mut Formatter) {
-        f.write_element(FormatElement::Tag(StartLabelled(self.label_id)));
-        Arguments::from(&self.content).fmt(f);
+impl<Context> Format<Context> for FormatLabelled<'_, Context> {
+    fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
+        f.write_element(FormatElement::Tag(StartLabelled(self.label_id)))?;
+        Arguments::from(&self.content).fmt(f)?;
         f.write_element(FormatElement::Tag(EndLabelled))
     }
 }
 
-impl std::fmt::Debug for FormatLabelled<'_> {
+impl<Context> std::fmt::Debug for FormatLabelled<'_, Context> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("Label")
             .field(&self.label_id)
@@ -503,9 +503,9 @@ impl std::fmt::Debug for FormatLabelled<'_> {
 /// use biome_formatter::format;
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// // the tab must be encoded as \\t to not literally print a tab character ("Hello{tab}World" vs "Hello\tWorld")
-/// let elements = format!(SimpleFormatContext::default(), [text("a"), space(), text("b")]);
+/// let elements = format!(SimpleFormatContext::default(), [text("a"), space(), text("b")])?;
 ///
 /// assert_eq!("a b", elements.print()?.as_code());
 /// # Ok(())
@@ -526,7 +526,7 @@ pub const fn space() -> Space {
 /// use biome_formatter::{format, format_args, LineWidth, SimpleFormatOptions};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let context = SimpleFormatContext::new(SimpleFormatOptions {
 ///     line_width: LineWidth::try_from(20).unwrap(),
 ///     ..SimpleFormatOptions::default()
@@ -539,7 +539,7 @@ pub const fn space() -> Space {
 ///         text("1"),
 ///         hard_space(),
 ///     ])
-/// ]);
+/// ])?;
 /// assert_eq!(
 ///     "nineteen_characters\n1",
 ///     elements.print()?.as_code()
@@ -555,7 +555,7 @@ pub const fn space() -> Space {
 /// use biome_formatter::{format, format_args, LineWidth, SimpleFormatOptions};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let context = SimpleFormatContext::new(SimpleFormatOptions {
 ///     line_width: LineWidth::try_from(20).unwrap(),
 ///     ..SimpleFormatOptions::default()
@@ -568,7 +568,7 @@ pub const fn space() -> Space {
 ///         text("1"),
 ///         space(),
 ///     ])
-/// ]);
+/// ])?;
 /// assert_eq!(
 ///     "nineteen_characters1",
 ///     elements.print()?.as_code()
@@ -589,9 +589,9 @@ pub const fn hard_space() -> HardSpace {
 /// use biome_formatter::format;
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
-/// let elements = format!(SimpleFormatContext::default(), [text("a"), maybe_space(true), text("b")]);
-/// let nospace = format!(SimpleFormatContext::default(), [text("a"), maybe_space(false), text("b")]);
+/// # fn main() -> FormatResult<()> {
+/// let elements = format!(SimpleFormatContext::default(), [text("a"), maybe_space(true), text("b")])?;
+/// let nospace = format!(SimpleFormatContext::default(), [text("a"), maybe_space(false), text("b")])?;
 ///
 /// assert_eq!("a b", elements.print()?.as_code());
 /// assert_eq!("ab", nospace.print()?.as_code());
@@ -606,8 +606,8 @@ pub fn maybe_space(should_insert: bool) -> Option<Space> {
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct Space;
 
-impl Format for Space {
-    fn fmt(&self, f: &mut Formatter) {
+impl<Context> Format<Context> for Space {
+    fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         f.write_element(FormatElement::Space)
     }
 }
@@ -615,8 +615,8 @@ impl Format for Space {
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct HardSpace;
 
-impl Format for HardSpace {
-    fn fmt(&self, f: &mut Formatter) {
+impl<Context> Format<Context> for HardSpace {
+    fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         f.write_element(FormatElement::HardSpace)
     }
 }
@@ -634,7 +634,7 @@ impl Format for HardSpace {
 /// use biome_formatter::{format, format_args};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let block = format!(SimpleFormatContext::default(), [
 ///     text("switch {"),
 ///     block_indent(&format_args![
@@ -646,7 +646,7 @@ impl Format for HardSpace {
 ///         ])
 ///     ]),
 ///     text("}"),
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "switch {\n\tdefault:\n\t\tbreak;\n}",
@@ -661,7 +661,7 @@ impl Format for HardSpace {
 /// use biome_formatter::prelude::*;
 /// use biome_formatter::{format, format_args};
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let block = format!(
 ///     SimpleFormatContext::default(),
 ///     [
@@ -674,7 +674,7 @@ impl Format for HardSpace {
 ///             ])]
 ///         )])
 ///     ]
-/// );
+/// )?;
 ///
 /// assert_eq!(
 ///     "root\n\t\t\tshoud be 3 tabs",
@@ -684,9 +684,9 @@ impl Format for HardSpace {
 /// # }
 /// ```
 #[inline]
-pub fn indent<Content>(content: &Content) -> Indent
+pub fn indent<Content, Context>(content: &Content) -> Indent<Context>
 where
-    Content: Format,
+    Content: Format<Context>,
 {
     Indent {
         content: Argument::new(content),
@@ -694,19 +694,19 @@ where
 }
 
 #[derive(Copy, Clone)]
-pub struct Indent<'a> {
-    content: Argument<'a>,
+pub struct Indent<'a, Context> {
+    content: Argument<'a, Context>,
 }
 
-impl Format for Indent<'_> {
-    fn fmt(&self, f: &mut Formatter) {
-        f.write_element(FormatElement::Tag(StartIndent));
-        Arguments::from(&self.content).fmt(f);
+impl<Context> Format<Context> for Indent<'_, Context> {
+    fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
+        f.write_element(FormatElement::Tag(StartIndent))?;
+        Arguments::from(&self.content).fmt(f)?;
         f.write_element(FormatElement::Tag(EndIndent))
     }
 }
 
-impl std::fmt::Debug for Indent<'_> {
+impl<Context> std::fmt::Debug for Indent<'_, Context> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("Indent").field(&"{{content}}").finish()
     }
@@ -724,7 +724,7 @@ impl std::fmt::Debug for Indent<'_> {
 /// use biome_formatter::{format, format_args};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let block = format!(SimpleFormatContext::default(), [
 ///     text("root"),
 ///     align(2, &format_args![
@@ -743,7 +743,7 @@ impl std::fmt::Debug for Indent<'_> {
 ///         hard_line_break(),
 ///         text("Dedent on root level is a no-op.")
 ///     ])
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "root\n  aligned\nnot aligned\n\tIndented, not aligned\nDedent on root level is a no-op.",
@@ -757,7 +757,7 @@ impl std::fmt::Debug for Indent<'_> {
 /// use biome_formatter::prelude::*;
 /// use biome_formatter::{format, format_args, IndentStyle, IndentWidth, SimpleFormatOptions};
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 ///     let context = SimpleFormatContext::new(SimpleFormatOptions {
 ///         indent_width: IndentWidth::try_from(8).unwrap(),
 ///         indent_style: IndentStyle::Space,
@@ -799,7 +799,7 @@ impl std::fmt::Debug for Indent<'_> {
 ///             ),
 ///             dedent(&format_args![hard_line_break(), text("root level")])
 ///         ]
-///     );
+///     )?;
 ///     assert_eq!(
 ///      "root\n        Indented\n          Indented and aligned\n        Indented, not aligned\n  Aligned\n          Aligned, and indented\n  aligned, not Intended\nroot level",
 ///      elements.print()?.as_code()
@@ -812,7 +812,7 @@ impl std::fmt::Debug for Indent<'_> {
 /// use biome_formatter::prelude::*;
 /// use biome_formatter::{format, format_args};
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let block = format!(
 ///     SimpleFormatContext::default(),
 ///     [
@@ -832,7 +832,7 @@ impl std::fmt::Debug for Indent<'_> {
 ///             ),]
 ///         )])
 ///     ]
-/// );
+/// )?;
 /// assert_eq!(
 ///     "root\n\t\t\t\tshould be 4 tabs\n\t    should be 1 tab and 4 spaces",
 ///     block.print()?.as_code()
@@ -841,9 +841,9 @@ impl std::fmt::Debug for Indent<'_> {
 /// # }
 /// ```
 #[inline]
-pub fn dedent<Content>(content: &Content) -> Dedent
+pub fn dedent<Content, Context>(content: &Content) -> Dedent<Context>
 where
-    Content: Format,
+    Content: Format<Context>,
 {
     Dedent {
         content: Argument::new(content),
@@ -852,20 +852,20 @@ where
 }
 
 #[derive(Copy, Clone)]
-pub struct Dedent<'a> {
-    content: Argument<'a>,
+pub struct Dedent<'a, Context> {
+    content: Argument<'a, Context>,
     mode: DedentMode,
 }
 
-impl Format for Dedent<'_> {
-    fn fmt(&self, f: &mut Formatter) {
-        f.write_element(FormatElement::Tag(StartDedent(self.mode)));
-        Arguments::from(&self.content).fmt(f);
+impl<Context> Format<Context> for Dedent<'_, Context> {
+    fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
+        f.write_element(FormatElement::Tag(StartDedent(self.mode)))?;
+        Arguments::from(&self.content).fmt(f)?;
         f.write_element(FormatElement::Tag(EndDedent(self.mode)))
     }
 }
 
-impl std::fmt::Debug for Dedent<'_> {
+impl<Context> std::fmt::Debug for Dedent<'_, Context> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("Dedent").field(&"{{content}}").finish()
     }
@@ -879,7 +879,7 @@ impl std::fmt::Debug for Dedent<'_> {
 /// use biome_formatter::{format, format_args};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let block = format!(SimpleFormatContext::default(), [
 ///     text("root"),
 ///     indent(&format_args![
@@ -900,7 +900,7 @@ impl std::fmt::Debug for Dedent<'_> {
 ///             text("end indent level 2"),
 ///         ])
 ///  ]),
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "root\n\tindent level 1\n\t\tindent level 2\n\t\t  two space align\nstarts at the beginning of the line\n\t\tend indent level 2",
@@ -914,9 +914,9 @@ impl std::fmt::Debug for Dedent<'_> {
 ///
 /// This resembles the behaviour of Prettier's `align(Number.NEGATIVE_INFINITY, content)` IR element.
 #[inline]
-pub fn dedent_to_root<Content>(content: &Content) -> Dedent
+pub fn dedent_to_root<Content, Context>(content: &Content) -> Dedent<Context>
 where
-    Content: Format,
+    Content: Format<Context>,
 {
     Dedent {
         content: Argument::new(content),
@@ -941,7 +941,7 @@ where
 /// use biome_formatter::{format, format_args};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let block = format!(SimpleFormatContext::default(), [
 ///     text("a"),
 ///     hard_line_break(),
@@ -961,7 +961,7 @@ where
 ///         text("}"),
 ///     ]),
 ///     text(";")
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "a\n? function () {\n  }\n: function () {\n\t\tconsole.log('test');\n  };",
@@ -986,7 +986,7 @@ where
 /// use biome_formatter::{format, format_args, IndentStyle, SimpleFormatOptions};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let context = SimpleFormatContext::new(SimpleFormatOptions {
 ///     indent_style: IndentStyle::Space,
 ///     indent_width: 4.try_into().unwrap(),
@@ -1012,7 +1012,7 @@ where
 ///         text("}"),
 ///     ]),
 ///     text(";")
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "a\n? function () {\n  }\n: function () {\n      console.log('test');\n  };",
@@ -1027,9 +1027,9 @@ where
 ///
 /// * tab indention: Printer indents the expression with two tabs because the `align` increases the indention level.
 /// * space indention: Printer indents the expression by 4 spaces (one indention level) **and** 2 spaces for the align.
-pub fn align<Content>(count: u8, content: &Content) -> Align
+pub fn align<Content, Context>(count: u8, content: &Content) -> Align<Context>
 where
-    Content: Format,
+    Content: Format<Context>,
 {
     Align {
         count: NonZeroU8::new(count).expect("Alignment count must be a non-zero number."),
@@ -1038,20 +1038,20 @@ where
 }
 
 #[derive(Copy, Clone)]
-pub struct Align<'a> {
+pub struct Align<'a, Context> {
     count: NonZeroU8,
-    content: Argument<'a>,
+    content: Argument<'a, Context>,
 }
 
-impl Format for Align<'_> {
-    fn fmt(&self, f: &mut Formatter) {
-        f.write_element(FormatElement::Tag(StartAlign(tag::Align(self.count))));
-        Arguments::from(&self.content).fmt(f);
+impl<Context> Format<Context> for Align<'_, Context> {
+    fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
+        f.write_element(FormatElement::Tag(StartAlign(tag::Align(self.count))))?;
+        Arguments::from(&self.content).fmt(f)?;
         f.write_element(FormatElement::Tag(EndAlign))
     }
 }
 
-impl std::fmt::Debug for Align<'_> {
+impl<Context> std::fmt::Debug for Align<'_, Context> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Align")
             .field("count", &self.count)
@@ -1073,7 +1073,7 @@ impl std::fmt::Debug for Align<'_> {
 /// use biome_formatter::{format, format_args};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let block = format![
 ///     SimpleFormatContext::default(),
 ///     [
@@ -1085,7 +1085,7 @@ impl std::fmt::Debug for Align<'_> {
 ///         ]),
 ///         text("}"),
 ///     ]
-/// ];
+/// ]?;
 ///
 /// assert_eq!(
 ///     "{\n\tlet a = 10;\n\tlet c = a + 5;\n}",
@@ -1095,7 +1095,7 @@ impl std::fmt::Debug for Align<'_> {
 /// # }
 /// ```
 #[inline]
-pub fn block_indent(content: &impl Format) -> BlockIndent {
+pub fn block_indent<Context>(content: &impl Format<Context>) -> BlockIndent<Context> {
     BlockIndent {
         content: Argument::new(content),
         mode: IndentMode::Block,
@@ -1114,7 +1114,7 @@ pub fn block_indent(content: &impl Format) -> BlockIndent {
 /// use biome_formatter::{format, format_args, LineWidth, SimpleFormatOptions};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let context = SimpleFormatContext::new(SimpleFormatOptions {
 ///     line_width: LineWidth::try_from(10).unwrap(),
 ///     ..SimpleFormatOptions::default()
@@ -1130,7 +1130,7 @@ pub fn block_indent(content: &impl Format) -> BlockIndent {
 ///         ]),
 ///         text("]"),
 ///     ])
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "[\n\t'First string',\n\t'second string',\n]",
@@ -1145,7 +1145,7 @@ pub fn block_indent(content: &impl Format) -> BlockIndent {
 /// use biome_formatter::{format, format_args};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let elements = format!(SimpleFormatContext::default(), [
 ///     group(&format_args![
 ///         text("["),
@@ -1156,7 +1156,7 @@ pub fn block_indent(content: &impl Format) -> BlockIndent {
 ///         ]),
 ///         text("]"),
 ///     ])
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "[5, 10]",
@@ -1166,7 +1166,7 @@ pub fn block_indent(content: &impl Format) -> BlockIndent {
 /// # }
 /// ```
 #[inline]
-pub fn soft_block_indent(content: &impl Format) -> BlockIndent {
+pub fn soft_block_indent<Context>(content: &impl Format<Context>) -> BlockIndent<Context> {
     BlockIndent {
         content: Argument::new(content),
         mode: IndentMode::Soft,
@@ -1185,7 +1185,7 @@ pub fn soft_block_indent(content: &impl Format) -> BlockIndent {
 /// use biome_formatter::{format, format_args, LineWidth, SimpleFormatOptions};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let context = SimpleFormatContext::new(SimpleFormatOptions {
 ///     line_width: LineWidth::try_from(10).unwrap(),
 ///     ..SimpleFormatOptions::default()
@@ -1202,7 +1202,7 @@ pub fn soft_block_indent(content: &impl Format) -> BlockIndent {
 ///         ], false),
 ///         text("}")
 ///     ])
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "{\n\taPropertyThatExceeds: 'line width'\n}",
@@ -1218,7 +1218,7 @@ pub fn soft_block_indent(content: &impl Format) -> BlockIndent {
 /// use biome_formatter::{format, format_args};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let elements = format!(SimpleFormatContext::default(), [
 ///     group(&format_args![
 ///         text("{"),
@@ -1230,7 +1230,7 @@ pub fn soft_block_indent(content: &impl Format) -> BlockIndent {
 ///         ], true),
 ///         text("}")
 ///     ])
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "{ a: 5 }",
@@ -1245,7 +1245,7 @@ pub fn soft_block_indent(content: &impl Format) -> BlockIndent {
 /// use biome_formatter::{format, format_args};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let elements = format!(SimpleFormatContext::default(), [
 ///     group(&format_args![
 ///         text("{"),
@@ -1257,7 +1257,7 @@ pub fn soft_block_indent(content: &impl Format) -> BlockIndent {
 ///         ], false),
 ///         text("}")
 ///     ])
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "{a: 5}",
@@ -1266,10 +1266,10 @@ pub fn soft_block_indent(content: &impl Format) -> BlockIndent {
 /// # Ok(())
 /// # }
 /// ```
-pub fn soft_block_indent_with_maybe_space(
-    content: &impl Format,
+pub fn soft_block_indent_with_maybe_space<Context>(
+    content: &impl Format<Context>,
     should_add_space: bool,
-) -> BlockIndent {
+) -> BlockIndent<Context> {
     if should_add_space {
         soft_space_or_block_indent(content)
     } else {
@@ -1292,7 +1292,7 @@ pub fn soft_block_indent_with_maybe_space(
 /// use biome_formatter::{format, format_args, LineWidth, SimpleFormatOptions};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let context = SimpleFormatContext::new(SimpleFormatOptions {
 ///     line_width: LineWidth::try_from(10).unwrap(),
 ///     ..SimpleFormatOptions::default()
@@ -1311,7 +1311,7 @@ pub fn soft_block_indent_with_maybe_space(
 ///             text("lastName"),
 ///         ]),
 ///     ])
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "name =\n\tfirstName + lastName",
@@ -1326,7 +1326,7 @@ pub fn soft_block_indent_with_maybe_space(
 /// use biome_formatter::{format, format_args};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let elements = format!(SimpleFormatContext::default(), [
 ///     group(&format_args![
 ///         text("a"),
@@ -1334,7 +1334,7 @@ pub fn soft_block_indent_with_maybe_space(
 ///         text("="),
 ///         soft_line_indent_or_space(&text("10")),
 ///     ])
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "a = 10",
@@ -1344,7 +1344,7 @@ pub fn soft_block_indent_with_maybe_space(
 /// # }
 /// ```
 #[inline]
-pub fn soft_line_indent_or_space(content: &impl Format) -> BlockIndent {
+pub fn soft_line_indent_or_space<Context>(content: &impl Format<Context>) -> BlockIndent<Context> {
     BlockIndent {
         content: Argument::new(content),
         mode: IndentMode::SoftLineOrSpace,
@@ -1362,7 +1362,7 @@ pub fn soft_line_indent_or_space(content: &impl Format) -> BlockIndent {
 /// use biome_formatter::{format, format_args, LineWidth, SimpleFormatOptions};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let context = SimpleFormatContext::new(SimpleFormatOptions {
 ///     line_width: LineWidth::try_from(10).unwrap(),
 ///     ..SimpleFormatOptions::default()
@@ -1381,7 +1381,7 @@ pub fn soft_line_indent_or_space(content: &impl Format) -> BlockIndent {
 ///             text("lastName"),
 ///         ]),
 ///     ])
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "name =\n\tfirstName + lastName",
@@ -1396,7 +1396,7 @@ pub fn soft_line_indent_or_space(content: &impl Format) -> BlockIndent {
 /// use biome_formatter::{format, format_args};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let elements = format!(SimpleFormatContext::default(), [
 ///     group(&format_args![
 ///         text("a"),
@@ -1404,7 +1404,7 @@ pub fn soft_line_indent_or_space(content: &impl Format) -> BlockIndent {
 ///         text("="),
 ///         soft_line_indent_or_hard_space(&text("10")),
 ///     ])
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "a = 10",
@@ -1419,7 +1419,7 @@ pub fn soft_line_indent_or_space(content: &impl Format) -> BlockIndent {
 /// use biome_formatter::{format, format_args, LineWidth, SimpleFormatOptions};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let context = SimpleFormatContext::new(SimpleFormatOptions {
 ///     line_width: LineWidth::try_from(8).unwrap(),
 ///     ..SimpleFormatOptions::default()
@@ -1434,7 +1434,7 @@ pub fn soft_line_indent_or_space(content: &impl Format) -> BlockIndent {
 ///             text("10"),
 ///         ]),
 ///     ])
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "value\n=\n\t10",
@@ -1444,7 +1444,9 @@ pub fn soft_line_indent_or_space(content: &impl Format) -> BlockIndent {
 /// # }
 /// ```
 #[inline]
-pub fn soft_line_indent_or_hard_space(content: &impl Format) -> BlockIndent {
+pub fn soft_line_indent_or_hard_space<Context>(
+    content: &impl Format<Context>,
+) -> BlockIndent<Context> {
     BlockIndent {
         content: Argument::new(content),
         mode: IndentMode::HardSpace,
@@ -1452,8 +1454,8 @@ pub fn soft_line_indent_or_hard_space(content: &impl Format) -> BlockIndent {
 }
 
 #[derive(Copy, Clone)]
-pub struct BlockIndent<'a> {
-    content: Argument<'a>,
+pub struct BlockIndent<'a, Context> {
+    content: Argument<'a, Context>,
     mode: IndentMode,
 }
 
@@ -1466,44 +1468,44 @@ enum IndentMode {
     SoftLineOrSpace,
 }
 
-impl Format for BlockIndent<'_> {
-    fn fmt(&self, f: &mut Formatter) {
+impl<Context> Format<Context> for BlockIndent<'_, Context> {
+    fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         let snapshot = f.snapshot();
 
-        f.write_element(FormatElement::Tag(StartIndent));
+        f.write_element(FormatElement::Tag(StartIndent))?;
 
         match self.mode {
-            IndentMode::Soft => write!(f, [soft_line_break()]),
-            IndentMode::Block => write!(f, [hard_line_break()]),
+            IndentMode::Soft => write!(f, [soft_line_break()])?,
+            IndentMode::Block => write!(f, [hard_line_break()])?,
             IndentMode::SoftLineOrSpace | IndentMode::SoftSpace => {
-                write!(f, [soft_line_break_or_space()])
+                write!(f, [soft_line_break_or_space()])?
             }
-            IndentMode::HardSpace => write!(f, [hard_space(), soft_line_break()]),
+            IndentMode::HardSpace => write!(f, [hard_space(), soft_line_break()])?,
         }
 
         let is_empty = {
             let mut recording = f.start_recording();
-            recording.write_fmt(Arguments::from(&self.content));
+            recording.write_fmt(Arguments::from(&self.content))?;
             recording.stop().is_empty()
         };
 
         if is_empty {
             f.restore_snapshot(snapshot);
-            return;
+            return Ok(());
         }
 
-        f.write_element(FormatElement::Tag(EndIndent));
+        f.write_element(FormatElement::Tag(EndIndent))?;
 
         match self.mode {
             IndentMode::Soft => write!(f, [soft_line_break()]),
             IndentMode::Block => write!(f, [hard_line_break()]),
             IndentMode::SoftSpace => write!(f, [soft_line_break_or_space()]),
-            IndentMode::SoftLineOrSpace | IndentMode::HardSpace => {}
-        };
+            IndentMode::SoftLineOrSpace | IndentMode::HardSpace => Ok(()),
+        }
     }
 }
 
-impl std::fmt::Debug for BlockIndent<'_> {
+impl<Context> std::fmt::Debug for BlockIndent<'_, Context> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let name = match self.mode {
             IndentMode::Soft => "SoftBlockIndent",
@@ -1527,7 +1529,7 @@ impl std::fmt::Debug for BlockIndent<'_> {
 /// use biome_formatter::{format, format_args, LineWidth, SimpleFormatOptions};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let context = SimpleFormatContext::new(SimpleFormatOptions {
 ///     line_width: LineWidth::try_from(10).unwrap(),
 ///     ..SimpleFormatOptions::default()
@@ -1544,7 +1546,7 @@ impl std::fmt::Debug for BlockIndent<'_> {
 ///         ]),
 ///         text("}")
 ///     ])
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "{\n\taPropertyThatExceeds: 'line width'\n}",
@@ -1559,7 +1561,7 @@ impl std::fmt::Debug for BlockIndent<'_> {
 /// use biome_formatter::{format, format_args};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let elements = format!(SimpleFormatContext::default(), [
 ///     group(&format_args![
 ///         text("{"),
@@ -1571,7 +1573,7 @@ impl std::fmt::Debug for BlockIndent<'_> {
 ///         ]),
 ///         text("}")
 ///     ])
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "{ a: 5 }",
@@ -1580,7 +1582,7 @@ impl std::fmt::Debug for BlockIndent<'_> {
 /// # Ok(())
 /// # }
 /// ```
-pub fn soft_space_or_block_indent(content: &impl Format) -> BlockIndent {
+pub fn soft_space_or_block_indent<Context>(content: &impl Format<Context>) -> BlockIndent<Context> {
     BlockIndent {
         content: Argument::new(content),
         mode: IndentMode::SoftSpace,
@@ -1604,7 +1606,7 @@ pub fn soft_space_or_block_indent(content: &impl Format) -> BlockIndent {
 /// use biome_formatter::{format, format_args};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let elements = format!(SimpleFormatContext::default(), [
 ///     group(&format_args![
 ///         text("["),
@@ -1617,7 +1619,7 @@ pub fn soft_space_or_block_indent(content: &impl Format) -> BlockIndent {
 ///         ]),
 ///         text("]"),
 ///     ])
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "[1, 2, 3]",
@@ -1632,7 +1634,7 @@ pub fn soft_space_or_block_indent(content: &impl Format) -> BlockIndent {
 /// use biome_formatter::{format, format_args, LineWidth, SimpleFormatOptions};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let context = SimpleFormatContext::new(SimpleFormatOptions {
 ///     line_width: LineWidth::try_from(20).unwrap(),
 ///     ..SimpleFormatOptions::default()
@@ -1650,7 +1652,7 @@ pub fn soft_space_or_block_indent(content: &impl Format) -> BlockIndent {
 ///         ]),
 ///         text("]"),
 ///     ])
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "[\n\t'Good morning! How are you today?',\n\t2,\n\t3\n]",
@@ -1660,7 +1662,7 @@ pub fn soft_space_or_block_indent(content: &impl Format) -> BlockIndent {
 /// # }
 /// ```
 #[inline]
-pub fn group(content: &impl Format) -> Group {
+pub fn group<Context>(content: &impl Format<Context>) -> Group<Context> {
     Group {
         content: Argument::new(content),
         group_id: None,
@@ -1669,13 +1671,13 @@ pub fn group(content: &impl Format) -> Group {
 }
 
 #[derive(Copy, Clone)]
-pub struct Group<'a> {
-    content: Argument<'a>,
+pub struct Group<'a, Context> {
+    content: Argument<'a, Context>,
     group_id: Option<GroupId>,
     should_expand: bool,
 }
 
-impl Group<'_> {
+impl<Context> Group<'_, Context> {
     pub fn with_group_id(mut self, group_id: Option<GroupId>) -> Self {
         self.group_id = group_id;
         self
@@ -1693,8 +1695,8 @@ impl Group<'_> {
     }
 }
 
-impl Format for Group<'_> {
-    fn fmt(&self, f: &mut Formatter) {
+impl<Context> Format<Context> for Group<'_, Context> {
+    fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         let mode = match self.should_expand {
             true => GroupMode::Expand,
             false => GroupMode::Flat,
@@ -1702,15 +1704,15 @@ impl Format for Group<'_> {
 
         f.write_element(FormatElement::Tag(StartGroup(
             tag::Group::new().with_id(self.group_id).with_mode(mode),
-        )));
+        )))?;
 
-        Arguments::from(&self.content).fmt(f);
+        Arguments::from(&self.content).fmt(f)?;
 
         f.write_element(FormatElement::Tag(EndGroup))
     }
 }
 
-impl std::fmt::Debug for Group<'_> {
+impl<Context> std::fmt::Debug for Group<'_, Context> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("GroupElements")
             .field("group_id", &self.group_id)
@@ -1730,7 +1732,7 @@ impl std::fmt::Debug for Group<'_> {
 /// use biome_formatter::{format, format_args, LineWidth};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let elements = format!(SimpleFormatContext::default(), [
 ///     group(&format_args![
 ///         text("["),
@@ -1744,7 +1746,7 @@ impl std::fmt::Debug for Group<'_> {
 ///         ]),
 ///         text("]"),
 ///     ])
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "[\n\t'Good morning! How are you today?',\n\t2,\n\t3\n]",
@@ -1763,8 +1765,8 @@ pub const fn expand_parent() -> ExpandParent {
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct ExpandParent;
 
-impl Format for ExpandParent {
-    fn fmt(&self, f: &mut Formatter) {
+impl<Context> Format<Context> for ExpandParent {
+    fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         f.write_element(FormatElement::ExpandParent)
     }
 }
@@ -1784,7 +1786,7 @@ impl Format for ExpandParent {
 /// use biome_formatter::{format, format_args};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let elements = format!(SimpleFormatContext::default(), [
 ///     group(&format_args![
 ///         text("["),
@@ -1798,7 +1800,7 @@ impl Format for ExpandParent {
 ///         ]),
 ///         text("]"),
 ///     ])
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "[1, 2, 3]",
@@ -1814,7 +1816,7 @@ impl Format for ExpandParent {
 /// use biome_formatter::prelude::*;
 /// use biome_formatter::printer::PrintWidth;
 ///
-/// # fn main()  {
+/// fn main() -> FormatResult<()> {
 /// let context = SimpleFormatContext::new(SimpleFormatOptions {
 ///     line_width: LineWidth::try_from(20).unwrap(),
 ///     ..SimpleFormatOptions::default()
@@ -1833,7 +1835,7 @@ impl Format for ExpandParent {
 ///         ]),
 ///         text("]"),
 ///     ])
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "[\n\t'A somewhat longer string to force a line break',\n\t2,\n\t3,\n]",
@@ -1843,9 +1845,9 @@ impl Format for ExpandParent {
 /// # }
 /// ```
 #[inline]
-pub fn if_group_breaks<Content>(content: &Content) -> IfGroupBreaks
+pub fn if_group_breaks<Content, Context>(content: &Content) -> IfGroupBreaks<Context>
 where
-    Content: Format,
+    Content: Format<Context>,
 {
     IfGroupBreaks {
         content: Argument::new(content),
@@ -1866,7 +1868,7 @@ where
 /// use biome_formatter::{format, format_args};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let formatted = format!(SimpleFormatContext::default(), [
 ///     group(&format_args![
 ///         text("["),
@@ -1880,7 +1882,7 @@ where
 ///         ]),
 ///         text("]"),
 ///     ])
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "[1, 2, 3,]",
@@ -1895,7 +1897,7 @@ where
 /// use biome_formatter::{format, format_args, LineWidth, SimpleFormatOptions};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let context = SimpleFormatContext::new(SimpleFormatOptions {
 ///     line_width: LineWidth::try_from(20).unwrap(),
 ///     ..SimpleFormatOptions::default()
@@ -1914,7 +1916,7 @@ where
 ///         ]),
 ///         text("]"),
 ///     ])
-/// ]);
+/// ])?;
 ///
 /// assert_eq!(
 ///     "[\n\t'A somewhat longer string to force a line break',\n\t2,\n\t3\n]",
@@ -1924,9 +1926,9 @@ where
 /// # }
 /// ```
 #[inline]
-pub fn if_group_fits_on_line<Content>(flat_content: &Content) -> IfGroupBreaks
+pub fn if_group_fits_on_line<Content, Context>(flat_content: &Content) -> IfGroupBreaks<Context>
 where
-    Content: Format,
+    Content: Format<Context>,
 {
     IfGroupBreaks {
         mode: PrintMode::Flat,
@@ -1936,13 +1938,13 @@ where
 }
 
 #[derive(Copy, Clone)]
-pub struct IfGroupBreaks<'a> {
-    content: Argument<'a>,
+pub struct IfGroupBreaks<'a, Context> {
+    content: Argument<'a, Context>,
     group_id: Option<GroupId>,
     mode: PrintMode,
 }
 
-impl IfGroupBreaks<'_> {
+impl<Context> IfGroupBreaks<'_, Context> {
     /// Inserts some content that the printer only prints if the group with the specified `group_id`
     /// is printed in multiline mode. The referred group must appear before this element in the document
     /// but doesn't have to one of its ancestors.
@@ -1957,7 +1959,7 @@ impl IfGroupBreaks<'_> {
     /// use biome_formatter::{format, format_args, write, LineWidth, SimpleFormatOptions};
     /// use biome_formatter::prelude::*;
     ///
-    /// # fn main()  {
+    /// # fn main() -> FormatResult<()> {
     /// let context = SimpleFormatContext::new(SimpleFormatOptions {
     ///     line_width: LineWidth::try_from(20).unwrap(),
     ///     ..SimpleFormatOptions::default()
@@ -1987,7 +1989,7 @@ impl IfGroupBreaks<'_> {
     ///             ],
     ///         ).with_group_id(Some(group_id))
     ///     ])
-    /// })]);
+    /// })])?;
     ///
     /// assert_eq!(
     ///     "[\n\t1, 234568789,\n\t3456789, [4],\n]",
@@ -2002,17 +2004,17 @@ impl IfGroupBreaks<'_> {
     }
 }
 
-impl Format for IfGroupBreaks<'_> {
-    fn fmt(&self, f: &mut Formatter) {
+impl<Context> Format<Context> for IfGroupBreaks<'_, Context> {
+    fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         f.write_element(FormatElement::Tag(StartConditionalContent(
             Condition::new(self.mode).with_group_id(self.group_id),
-        )));
-        Arguments::from(&self.content).fmt(f);
+        )))?;
+        Arguments::from(&self.content).fmt(f)?;
         f.write_element(FormatElement::Tag(EndConditionalContent))
     }
 }
 
-impl std::fmt::Debug for IfGroupBreaks<'_> {
+impl<Context> std::fmt::Debug for IfGroupBreaks<'_, Context> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let name = match self.mode {
             PrintMode::Flat => "IfGroupFitsOnLine",
@@ -2057,7 +2059,7 @@ impl std::fmt::Debug for IfGroupBreaks<'_> {
 /// use biome_formatter::{format, format_args, LineWidth, SimpleFormatOptions, write};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let content = format_with(|f| {
 ///     let group_id = f.group_id("header");
 ///
@@ -2072,7 +2074,7 @@ impl std::fmt::Debug for IfGroupBreaks<'_> {
 ///     ..SimpleFormatOptions::default()
 /// });
 ///
-/// let formatted = format!(context, [content]);
+/// let formatted = format!(context, [content])?;
 ///
 /// assert_eq!(
 ///     "(aLongHeaderThatBreaksForSomeReason) =>\n\ta => b",
@@ -2087,7 +2089,7 @@ impl std::fmt::Debug for IfGroupBreaks<'_> {
 /// use biome_formatter::{format, format_args, LineWidth, SimpleFormatOptions, write};
 /// use biome_formatter::prelude::*;
 ///
-/// # fn main()  {
+/// # fn main() -> FormatResult<()> {
 /// let content = format_with(|f| {
 ///     let group_id = f.group_id("header");
 ///
@@ -2097,7 +2099,7 @@ impl std::fmt::Debug for IfGroupBreaks<'_> {
 ///     ])
 /// });
 ///
-/// let formatted = format!(SimpleFormatContext::default(), [content]);
+/// let formatted = format!(SimpleFormatContext::default(), [content])?;
 ///
 /// assert_eq!(
 ///     "(aLongHeaderThatBreaksForSomeReason) =>\na => b",
@@ -2107,9 +2109,12 @@ impl std::fmt::Debug for IfGroupBreaks<'_> {
 /// # }
 /// ```
 #[inline]
-pub fn indent_if_group_breaks<Content>(content: &Content, group_id: GroupId) -> IndentIfGroupBreaks
+pub fn indent_if_group_breaks<Content, Context>(
+    content: &Content,
+    group_id: GroupId,
+) -> IndentIfGroupBreaks<Context>
 where
-    Content: Format,
+    Content: Format<Context>,
 {
     IndentIfGroupBreaks {
         group_id,
@@ -2118,20 +2123,20 @@ where
 }
 
 #[derive(Copy, Clone)]
-pub struct IndentIfGroupBreaks<'a> {
-    content: Argument<'a>,
+pub struct IndentIfGroupBreaks<'a, Context> {
+    content: Argument<'a, Context>,
     group_id: GroupId,
 }
 
-impl Format for IndentIfGroupBreaks<'_> {
-    fn fmt(&self, f: &mut Formatter) {
-        f.write_element(FormatElement::Tag(StartIndentIfGroupBreaks(self.group_id)));
-        Arguments::from(&self.content).fmt(f);
+impl<Context> Format<Context> for IndentIfGroupBreaks<'_, Context> {
+    fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
+        f.write_element(FormatElement::Tag(StartIndentIfGroupBreaks(self.group_id)))?;
+        Arguments::from(&self.content).fmt(f)?;
         f.write_element(FormatElement::Tag(EndIndentIfGroupBreaks(self.group_id)))
     }
 }
 
-impl std::fmt::Debug for IndentIfGroupBreaks<'_> {
+impl<Context> std::fmt::Debug for IndentIfGroupBreaks<'_, Context> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("IndentIfGroupBreaks")
             .field("group_id", &self.group_id)
@@ -2142,22 +2147,22 @@ impl std::fmt::Debug for IndentIfGroupBreaks<'_> {
 
 /// Utility for formatting some content with an inline lambda function.
 #[derive(Copy, Clone)]
-pub struct FormatWith<T> {
+pub struct FormatWith<Context, T> {
     formatter: T,
-    context: PhantomData<T>,
+    context: PhantomData<Context>,
 }
 
-impl<T> Format for FormatWith<T>
+impl<Context, T> Format<Context> for FormatWith<Context, T>
 where
-    T: Fn(&mut Formatter),
+    T: Fn(&mut Formatter<Context>) -> FormatResult<()>,
 {
     #[inline(always)]
-    fn fmt(&self, f: &mut Formatter) {
+    fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         (self.formatter)(f)
     }
 }
 
-impl<T> std::fmt::Debug for FormatWith<T> {
+impl<Context, T> std::fmt::Debug for FormatWith<Context, T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("FormatWith").field(&"{{formatter}}").finish()
     }
@@ -2177,7 +2182,7 @@ impl<T> std::fmt::Debug for FormatWith<T> {
 /// }
 ///
 /// impl Format<SimpleFormatContext> for MyFormat {
-///     fn fmt(&self, f: &mut Formatter<SimpleFormatContext>)  {
+///     fn fmt(&self, f: &mut Formatter<SimpleFormatContext>) -> FormatResult<()> {
 ///         write!(f, [
 ///             text("("),
 ///             block_indent(&format_with(|f| {
@@ -2194,16 +2199,16 @@ impl<T> std::fmt::Debug for FormatWith<T> {
 ///     }
 /// }
 ///
-/// # fn main()  {
-/// let formatted = format!(SimpleFormatContext::default(), [MyFormat { items: vec!["a", "b", "c"]}]);
+/// # fn main() -> FormatResult<()> {
+/// let formatted = format!(SimpleFormatContext::default(), [MyFormat { items: vec!["a", "b", "c"]}])?;
 ///
 /// assert_eq!("(\n\ta b c\n)", formatted.print()?.as_code());
 /// # Ok(())
 /// # }
 /// ```
-pub const fn format_with<T>(formatter: T) -> FormatWith<T>
+pub const fn format_with<Context, T>(formatter: T) -> FormatWith<Context, T>
 where
-    T: Fn(&mut Formatter),
+    T: Fn(&mut Formatter<Context>) -> FormatResult<()>,
 {
     FormatWith {
         formatter,
@@ -2235,7 +2240,7 @@ where
 /// }
 ///
 /// impl Format<SimpleFormatContext> for MyFormat {
-///     fn fmt(&self, f: &mut Formatter<SimpleFormatContext>)  {
+///     fn fmt(&self, f: &mut Formatter<SimpleFormatContext>) -> FormatResult<()> {
 ///         let mut values = generate_values();
 ///
 ///         let first = values.next();
@@ -2252,8 +2257,8 @@ where
 ///     }
 /// }
 ///
-/// # fn main()  {
-/// let formatted = format!(SimpleFormatContext::default(), [MyFormat]);
+/// # fn main() -> FormatResult<()> {
+/// let formatted = format!(SimpleFormatContext::default(), [MyFormat])?;
 ///
 /// assert_eq!("1\n\t2\n\t3\n\t4\n", formatted.print()?.as_code());
 /// # Ok(())
@@ -2278,9 +2283,9 @@ where
 /// // Formatting the value more than once panics
 /// format!(SimpleFormatContext::default(), [value]);
 /// ```
-pub const fn format_once<T>(formatter: T) -> FormatOnce<T>
+pub const fn format_once<T, Context>(formatter: T) -> FormatOnce<T, Context>
 where
-    T: FnOnce(&mut Formatter),
+    T: FnOnce(&mut Formatter<Context>) -> FormatResult<()>,
 {
     FormatOnce {
         formatter: Cell::new(Some(formatter)),
@@ -2288,24 +2293,24 @@ where
     }
 }
 
-pub struct FormatOnce<T> {
+pub struct FormatOnce<T, Context> {
     formatter: Cell<Option<T>>,
-    context: PhantomData<T>,
+    context: PhantomData<Context>,
 }
 
-impl<T> Format for FormatOnce<T>
+impl<T, Context> Format<Context> for FormatOnce<T, Context>
 where
-    T: FnOnce(&mut Formatter),
+    T: FnOnce(&mut Formatter<Context>) -> FormatResult<()>,
 {
     #[inline(always)]
-    fn fmt(&self, f: &mut Formatter) {
+    fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         let formatter = self.formatter.take().expect("Tried to format a `format_once` at least twice. This is not allowed. You may want to use `format_with` or `format.memoized` instead.");
 
         (formatter)(f)
     }
 }
 
-impl<T> std::fmt::Debug for FormatOnce<T> {
+impl<T, Context> std::fmt::Debug for FormatOnce<T, Context> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("FormatOnce").field(&"{{formatter}}").finish()
     }
@@ -2314,19 +2319,21 @@ impl<T> std::fmt::Debug for FormatOnce<T> {
 /// Builder to join together a sequence of content.
 /// See [Formatter::join]
 #[must_use = "must eventually call `finish()` on Format builders"]
-pub struct JoinBuilder<'fmt, 'buf, Separator> {
-    fmt: &'fmt mut Formatter<'buf>,
+pub struct JoinBuilder<'fmt, 'buf, Separator, Context> {
+    result: FormatResult<()>,
+    fmt: &'fmt mut Formatter<'buf, Context>,
     with: Option<Separator>,
     has_elements: bool,
 }
 
-impl<'fmt, 'buf, Separator> JoinBuilder<'fmt, 'buf, Separator>
+impl<'fmt, 'buf, Separator, Context> JoinBuilder<'fmt, 'buf, Separator, Context>
 where
-    Separator: Format,
+    Separator: Format<Context>,
 {
     /// Creates a new instance that joins the elements without a separator
-    pub(super) fn new(fmt: &'fmt mut Formatter<'buf>) -> Self {
+    pub(super) fn new(fmt: &'fmt mut Formatter<'buf, Context>) -> Self {
         Self {
+            result: Ok(()),
             fmt,
             has_elements: false,
             with: None,
@@ -2334,8 +2341,9 @@ where
     }
 
     /// Creates a new instance that prints the passed separator between every two entries.
-    pub(super) fn with_separator(fmt: &'fmt mut Formatter<'buf>, with: Separator) -> Self {
+    pub(super) fn with_separator(fmt: &'fmt mut Formatter<'buf, Context>, with: Separator) -> Self {
         Self {
+            result: Ok(()),
             fmt,
             has_elements: false,
             with: Some(with),
@@ -2343,15 +2351,17 @@ where
     }
 
     /// Adds a new entry to the join output.
-    pub fn entry(&mut self, entry: &dyn Format) -> &mut Self {
-        if let Some(with) = &self.with {
-            if self.has_elements {
-                with.fmt(self.fmt);
+    pub fn entry(&mut self, entry: &dyn Format<Context>) -> &mut Self {
+        self.result = self.result.and_then(|_| {
+            if let Some(with) = &self.with {
+                if self.has_elements {
+                    with.fmt(self.fmt)?;
+                }
             }
-        }
-        self.has_elements = true;
+            self.has_elements = true;
 
-        entry.fmt(self.fmt);
+            entry.fmt(self.fmt)
+        });
 
         self
     }
@@ -2359,7 +2369,7 @@ where
     /// Adds the contents of an iterator of entries to the join output.
     pub fn entries<F, I>(&mut self, entries: I) -> &mut Self
     where
-        F: Format,
+        F: Format<Context>,
         I: IntoIterator<Item = F>,
     {
         for entry in entries {
@@ -2370,25 +2380,29 @@ where
     }
 
     /// Finishes the output and returns any error encountered.
-    pub fn finish(&mut self) {}
+    pub fn finish(&mut self) -> FormatResult<()> {
+        self.result
+    }
 }
 
 /// Builder to join together nodes that ensures that nodes separated by empty lines continue
 /// to be separated by empty lines in the formatted output.
 #[must_use = "must eventually call `finish()` on Format builders"]
-pub struct JoinNodesBuilder<'fmt, 'buf, Separator> {
+pub struct JoinNodesBuilder<'fmt, 'buf, Separator, Context> {
+    result: FormatResult<()>,
     /// The separator to insert between nodes. Either a soft or hard line break
     separator: Separator,
-    fmt: &'fmt mut Formatter<'buf>,
+    fmt: &'fmt mut Formatter<'buf, Context>,
     has_elements: bool,
 }
 
-impl<'fmt, 'buf, Separator> JoinNodesBuilder<'fmt, 'buf, Separator>
+impl<'fmt, 'buf, Separator, Context> JoinNodesBuilder<'fmt, 'buf, Separator, Context>
 where
-    Separator: Format,
+    Separator: Format<Context>,
 {
-    pub(super) fn new(separator: Separator, fmt: &'fmt mut Formatter<'buf>) -> Self {
+    pub(super) fn new(separator: Separator, fmt: &'fmt mut Formatter<'buf, Context>) -> Self {
         Self {
+            result: Ok(()),
             separator,
             fmt,
             has_elements: false,
@@ -2397,90 +2411,77 @@ where
 
     /// Adds a new node with the specified formatted content to the output, respecting any new lines
     /// that appear before the node in the input source.
-    pub fn entry(&mut self, _node: () /*&SyntaxNode*/, content: &dyn Format) {
-        if self.has_elements {
-            if get_lines_before(/* TODO: node*/) > 1 {
-                write!(self.fmt, [empty_line()]);
-            } else {
-                self.separator.fmt(self.fmt);
+    pub fn entry(&mut self, node: (), content: &dyn Format<Context>) {
+        self.result = self.result.and_then(|_| {
+            if self.has_elements {
+                if get_lines_before(node) > 1 {
+                    write!(self.fmt, [empty_line()])?;
+                } else {
+                    self.separator.fmt(self.fmt)?;
+                }
             }
-        }
 
-        self.has_elements = true;
+            self.has_elements = true;
 
-        // TODO: Why this can't be used?
-        // write!(self.fmt, [content]);
-        content.fmt(self.fmt);
+            write!(self.fmt, [content])
+        });
     }
 
     /// Writes an entry without adding a separating line break or empty line.
-    pub fn entry_no_separator(&mut self, content: &dyn Format) {
-        self.has_elements = true;
+    pub fn entry_no_separator(&mut self, content: &dyn Format<Context>) {
+        self.result = self.result.and_then(|_| {
+            self.has_elements = true;
 
-        // TODO: Why this can't be used?
-        // write!(self.fmt, [content]);
-        content.fmt(self.fmt);
+            write!(self.fmt, [content])
+        })
     }
 
     /// Adds an iterator of entries to the output. Each entry is a `(node, content)` tuple.
     pub fn entries<F, I>(&mut self, entries: I) -> &mut Self
     where
-        F: Format,
+        F: Format<Context>,
         I: IntoIterator<Item = ((), F)>,
     {
         for (node, content) in entries {
-            self.entry(node, &content)
+            self.entry(&node, &content)
         }
 
         self
     }
 
-    pub fn finish(&mut self) {}
+    pub fn finish(&mut self) -> FormatResult<()> {
+        self.result
+    }
 }
 
 /// Get the number of line breaks between two consecutive SyntaxNodes in the tree
-pub fn get_lines_before(/*next_node: &SyntaxNode*/) -> usize {
-    0
-    // // Count the newlines in the leading trivia of the next node
-    // if let Some(token) = next_node.first_token() {
-    //     get_lines_before_token(&token)
-    // } else {
-    //     0
-    // }
-}
-
-pub fn get_lines_before_token(/*token: &SyntaxToken*/) -> usize {
-    0
-    // token
-    //     .leading_trivia()
-    //     .pieces()
-    //     .take_while(|piece| {
-    //         // Stop at the first comment or skipped piece, the comment printer
-    //         // will handle newlines between the comment and the node
-    //         !(piece.is_comments() || piece.is_skipped())
-    //     })
-    //     .filter(|piece| piece.is_newline())
-    //     .count()
+pub fn get_lines_before(node: ()) -> usize {
+    0 // TODO
 }
 
 /// Builder to fill as many elements as possible on a single line.
 #[must_use = "must eventually call `finish()` on Format builders"]
-pub struct FillBuilder<'fmt, 'buf> {
-    fmt: &'fmt mut Formatter<'buf>,
+pub struct FillBuilder<'fmt, 'buf, Context> {
+    result: FormatResult<()>,
+    fmt: &'fmt mut Formatter<'buf, Context>,
     empty: bool,
 }
 
-impl<'a, 'buf> FillBuilder<'a, 'buf> {
-    pub(crate) fn new(fmt: &'a mut Formatter<'buf>) -> Self {
-        fmt.write_element(FormatElement::Tag(StartFill));
+impl<'a, 'buf, Context> FillBuilder<'a, 'buf, Context> {
+    pub(crate) fn new(fmt: &'a mut Formatter<'buf, Context>) -> Self {
+        let result = fmt.write_element(FormatElement::Tag(StartFill));
 
-        Self { fmt, empty: true }
+        Self {
+            result,
+            fmt,
+            empty: true,
+        }
     }
 
     /// Adds an iterator of entries to the fill output. Uses the passed `separator` to separate any two items.
-    pub fn entries<F, I>(&mut self, separator: &dyn Format, entries: I) -> &mut Self
+    pub fn entries<F, I>(&mut self, separator: &dyn Format<Context>, entries: I) -> &mut Self
     where
-        F: Format,
+        F: Format<Context>,
         I: IntoIterator<Item = F>,
     {
         for entry in entries {
@@ -2491,36 +2492,43 @@ impl<'a, 'buf> FillBuilder<'a, 'buf> {
     }
 
     /// Adds a new entry to the fill output. The `separator` isn't written if this is the first element in the list.
-    pub fn entry(&mut self, separator: &dyn Format, entry: &dyn Format) -> &mut Self {
-        if self.empty {
-            self.empty = false;
-        } else {
-            self.fmt.write_element(FormatElement::Tag(StartEntry));
-            separator.fmt(self.fmt);
-            self.fmt.write_element(FormatElement::Tag(EndEntry));
-        }
+    pub fn entry(
+        &mut self,
+        separator: &dyn Format<Context>,
+        entry: &dyn Format<Context>,
+    ) -> &mut Self {
+        self.result = self.result.and_then(|_| {
+            if self.empty {
+                self.empty = false;
+            } else {
+                self.fmt.write_element(FormatElement::Tag(StartEntry))?;
+                separator.fmt(self.fmt)?;
+                self.fmt.write_element(FormatElement::Tag(EndEntry))?;
+            }
 
-        self.fmt.write_element(FormatElement::Tag(StartEntry));
-        entry.fmt(self.fmt);
-        self.fmt.write_element(FormatElement::Tag(EndEntry));
+            self.fmt.write_element(FormatElement::Tag(StartEntry))?;
+            entry.fmt(self.fmt)?;
+            self.fmt.write_element(FormatElement::Tag(EndEntry))
+        });
 
         self
     }
 
     /// Finishes the output and returns any error encountered
-    pub fn finish(&mut self) {
-        self.fmt.write_element(FormatElement::Tag(EndFill));
+    pub fn finish(&mut self) -> FormatResult<()> {
+        self.result
+            .and_then(|_| self.fmt.write_element(FormatElement::Tag(EndFill)))
     }
 }
 
 /// The first variant is the most flat, and the last is the most expanded variant.
 /// See [`best_fitting!`] macro for a more in-detail documentation
 #[derive(Copy, Clone)]
-pub struct BestFitting<'a> {
-    variants: Arguments<'a>,
+pub struct BestFitting<'a, Context> {
+    variants: Arguments<'a, Context>,
 }
 
-impl<'a> BestFitting<'a> {
+impl<'a, Context> BestFitting<'a, Context> {
     /// Creates a new best fitting IR with the given variants. The method itself isn't unsafe
     /// but it is to discourage people from using it because the printer will panic if
     /// the slice doesn't contain at least the least and most expanded variants.
@@ -2535,7 +2543,7 @@ impl<'a> BestFitting<'a> {
     /// ## Safety
     /// The slice must contain at least two variants.
     #[doc(hidden)]
-    pub fn from_arguments_unchecked(variants: Arguments<'a>) -> Self {
+    pub fn from_arguments_unchecked(variants: Arguments<'a, Context>) -> Self {
         assert!(
             variants.0.len() >= 2,
             "Requires at least the least expanded and most expanded variants"
@@ -2545,17 +2553,17 @@ impl<'a> BestFitting<'a> {
     }
 }
 
-impl Format for BestFitting<'_> {
-    fn fmt(&self, f: &mut Formatter) {
+impl<Context> Format<Context> for BestFitting<'_, Context> {
+    fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         let mut buffer = VecBuffer::new(f.state_mut());
         let variants = self.variants.items();
 
         let mut formatted_variants = Vec::with_capacity(variants.len());
 
         for variant in variants {
-            buffer.write_element(FormatElement::Tag(StartEntry));
-            buffer.write_fmt(Arguments::from(variant));
-            buffer.write_element(FormatElement::Tag(EndEntry));
+            buffer.write_element(FormatElement::Tag(StartEntry))?;
+            buffer.write_fmt(Arguments::from(variant))?;
+            buffer.write_element(FormatElement::Tag(EndEntry))?;
 
             formatted_variants.push(buffer.take_vec().into_boxed_slice());
         }
@@ -2563,7 +2571,9 @@ impl Format for BestFitting<'_> {
         // SAFETY: The constructor guarantees that there are always at least two variants. It's, therefore,
         // safe to call into the unsafe `from_vec_unchecked` function
         let element = unsafe {
-            FormatElement::BestFitting(BestFittingElement::from_vec_unchecked(formatted_variants))
+            FormatElement::BestFitting(format_element::BestFittingElement::from_vec_unchecked(
+                formatted_variants,
+            ))
         };
 
         f.write_element(element)

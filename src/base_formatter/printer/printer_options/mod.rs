@@ -1,6 +1,6 @@
-use crate::options::{IndentStyle, IndentWidth, LineEnding, LineWidth};
+use crate::base_formatter::{FormatOptions, IndentStyle, IndentWidth, LineEnding, LineWidth};
 
-/// Options that affect how the [crate::Printer] prints the format tokens
+/// Options that affect how the [crate::base_formatter::Printer] prints the format tokens
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PrinterOptions {
     /// Width of an indent in characters.
@@ -25,6 +25,7 @@ impl PrintWidth {
         Self(width)
     }
 }
+
 impl Default for PrintWidth {
     fn default() -> Self {
         LineWidth::default().into()
@@ -40,6 +41,19 @@ impl From<LineWidth> for PrintWidth {
 impl From<PrintWidth> for usize {
     fn from(width: PrintWidth) -> Self {
         width.0 as usize
+    }
+}
+
+impl<'a, O> From<&'a O> for PrinterOptions
+where
+    O: FormatOptions,
+{
+    fn from(options: &'a O) -> Self {
+        PrinterOptions::default()
+            .with_indent_style(options.indent_style())
+            .with_indent_width(options.indent_width())
+            .with_print_width(options.line_width().into())
+            .with_line_ending(options.line_ending())
     }
 }
 

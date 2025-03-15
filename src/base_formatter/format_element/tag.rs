@@ -1,8 +1,7 @@
+use crate::base_formatter::format_element::PrintMode;
+use crate::base_formatter::{GroupId, TextSize};
 use std::cell::Cell;
 use std::num::NonZeroU8;
-
-use crate::format_element::PrintMode;
-use crate::group_id::GroupId;
 
 /// A Tag marking the start and end of some content to which some special formatting should be applied.
 ///
@@ -10,7 +9,7 @@ use crate::group_id::GroupId;
 /// will be applied to all elements in between the start/end tags.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Tag {
-    /// Indents the content one level deeper, see [crate::builders::indent] for documentation and examples.
+    /// Indents the content one level deeper, see [crate::base_formatter::builders::indent] for documentation and examples.
     StartIndent,
     EndIndent,
 
@@ -30,12 +29,12 @@ pub enum Tag {
     /// * on a single line: Omitting `LineMode::Soft` line breaks and printing spaces for `LineMode::SoftOrSpace`
     /// * on multiple lines: Printing all line breaks
     ///
-    /// See [crate::builders::group] for documentation and examples.
+    /// See [crate::base_formatter::builders::group] for documentation and examples.
     StartGroup(Group),
     EndGroup,
 
     /// Allows to specify content that gets printed depending on whatever the enclosing group
-    /// is printed on a single line or multiple lines. See [crate::builders::if_group_breaks] for examples.
+    /// is printed on a single line or multiple lines. See [crate::base_formatter::builders::if_group_breaks] for examples.
     StartConditionalContent(Condition),
     EndConditionalContent,
 
@@ -46,7 +45,7 @@ pub enum Tag {
 
     /// Concatenates multiple elements together with a given separator printed in either
     /// flat or expanded mode to fill the print width. Expect that the content is a list of alternating
-    /// [element, separator] See [crate::Formatter::fill].
+    /// [element, separator] See [crate::base_formatter::Formatter::fill].
     StartFill,
     EndFill,
 
@@ -65,7 +64,7 @@ pub enum Tag {
     /// Special semantic element marking the content with a label.
     /// This does not directly influence how the content will be printed.
     ///
-    /// See [crate::builders::labelled] for documentation.
+    /// See [crate::base_formatter::builders::labelled] for documentation.
     StartLabelled(LabelId),
     EndLabelled,
 }
@@ -287,7 +286,10 @@ pub enum VerbatimKind {
     Suppressed,
     /// This was intentionally skipped, not as a result of suppression.
     Skipped,
-    Verbatim,
+    Verbatim {
+        /// the length of the formatted node
+        length: TextSize,
+    },
 }
 
 impl VerbatimKind {
