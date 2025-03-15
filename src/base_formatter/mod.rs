@@ -23,6 +23,7 @@
 
 mod arguments;
 mod buffer;
+mod macros;
 pub mod builders;
 pub mod diagnostics;
 pub mod format_element;
