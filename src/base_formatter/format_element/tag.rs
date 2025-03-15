@@ -116,7 +116,6 @@ impl Tag {
 ///
 /// Each start end tag pair has its own [tag kind](TagKind).
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum TagKind {
     Indent,
     Align,
