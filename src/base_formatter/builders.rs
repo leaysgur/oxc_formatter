@@ -5,7 +5,7 @@ use crate::base_formatter::format_element::*;
 use crate::base_formatter::{
     Argument, Arguments, Format, FormatResult, Formatter, GroupId, format_element,
 };
-use crate::base_formatter::{Buffer, VecBuffer};
+use crate::base_formatter::{Buffer, VecBuffer, BufferExtensions};
 use crate::write;
 use std::cell::Cell;
 use std::marker::PhantomData;
@@ -2443,7 +2443,7 @@ where
         I: IntoIterator<Item = ((), F)>,
     {
         for (node, content) in entries {
-            self.entry(&node, &content)
+            self.entry(node, &content)
         }
 
         self
@@ -2455,7 +2455,7 @@ where
 }
 
 /// Get the number of line breaks between two consecutive SyntaxNodes in the tree
-pub fn get_lines_before(node: ()) -> usize {
+pub fn get_lines_before(_node: ()) -> usize {
     0 // TODO
 }
 

@@ -240,7 +240,7 @@ impl<'a> Printer<'a> {
                     .extend(args, queue.iter_content(TagKind::LineSuffix));
             }
 
-            FormatElement::Tag(StartVerbatim(kind)) => {
+            FormatElement::Tag(StartVerbatim(_kind)) => {
                 stack.push(TagKind::Verbatim, args);
             }
 
@@ -992,7 +992,9 @@ impl<'a, 'print> FitsMeasurer<'a, 'print> {
             }
             FormatElement::HardSpace => {
                 self.state.line_width += 1;
-                if self.state.line_width > self.options().print_width.into() {
+                if self.state.line_width
+                    > <PrintWidth as Into<usize>>::into(self.options().print_width)
+                {
                     return Ok(Fits::No);
                 }
             }
@@ -1059,7 +1061,6 @@ impl<'a, 'print> FitsMeasurer<'a, 'print> {
 
             FormatElement::StaticText { text } => return Ok(self.fits_text(text)),
             FormatElement::DynamicText { text, .. } => return Ok(self.fits_text(text)),
-            FormatElement::LocatedTokenText { slice, .. } => return Ok(self.fits_text(slice)),
 
             FormatElement::LineSuffixBoundary => {
                 if self.state.has_line_suffix {
@@ -1222,7 +1223,8 @@ impl<'a, 'print> FitsMeasurer<'a, 'print> {
                 '\t' => self.options().indent_width.value() as usize,
                 '\n' => {
                     return if self.must_be_flat
-                        || self.state.line_width > self.options().print_width.into()
+                        || self.state.line_width
+                            > <PrintWidth as Into<usize>>::into(self.options().print_width)
                     {
                         Fits::No
                     } else {
@@ -1234,7 +1236,7 @@ impl<'a, 'print> FitsMeasurer<'a, 'print> {
             self.state.line_width += char_width;
         }
 
-        if self.state.line_width > self.options().print_width.into() {
+        if self.state.line_width > <PrintWidth as Into<usize>>::into(self.options().print_width) {
             return Fits::No;
         }
 
@@ -1335,7 +1337,7 @@ mod tests {
     use crate::base_formatter::builders::*;
     use crate::base_formatter::printer::{PrintWidth, Printer, PrinterOptions};
     use crate::base_formatter::{
-        Document, Format, FormatResult, FormatState, Formatter, IndentStyle, Printed,
+        Buffer, Document, Format, FormatResult, FormatState, Formatter, IndentStyle, Printed,
         SimpleFormatContext, VecBuffer,
     };
     use crate::{format_args, write};

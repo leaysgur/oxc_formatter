@@ -2,6 +2,7 @@ use crate::base_formatter::builders::{if_group_breaks, text};
 use crate::base_formatter::formatter::Formatter;
 use crate::base_formatter::printer::PrinterOptions;
 use crate::base_formatter::{
+    Buffer,
     AttributePosition, BracketSameLine, BracketSpacing, Expand, Format, FormatContext,
     FormatOptions, FormatResult, IndentStyle, IndentWidth, LineEnding, LineWidth, QuoteStyle,
 };
