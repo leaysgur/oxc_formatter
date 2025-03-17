@@ -131,7 +131,8 @@ where
 {
 }
 
-type JsFormatter<'buf> = Formatter<'buf, JsFormatContext>;
+/// 'ast is the lifetime of the source code (input), 'buf is the lifetime of the buffer (output)
+type JsFormatter<'ast, 'buf> = Formatter<'buf, JsFormatContext<'ast>>;
 
 /// Rule for formatting a JavaScript [AstNode].
 trait FormatNodeRule<N> {
@@ -232,9 +233,11 @@ pub fn format_source(
 
     // TODO: Transform AST node
 
-    let context = JsFormatContext::new(options /*comments*/);
-    let formatted = crate::format!(context, [parsed.program.format()])
-        .map_err(|_| "TODO: format error".to_string())?;
+    let formatted = crate::format!(
+        JsFormatContext::new(source_text, options /*comments*/),
+        [parsed.program.format()]
+    )
+    .map_err(|_| "TODO: format error".to_string())?;
 
     // let context = state.into_context();
     // let comments = context.comments();

@@ -5,7 +5,7 @@ use crate::base_formatter::format_element::*;
 use crate::base_formatter::{
     Argument, Arguments, Format, FormatResult, Formatter, GroupId, format_element,
 };
-use crate::base_formatter::{Buffer, VecBuffer, BufferExtensions};
+use crate::base_formatter::{Buffer, BufferExtensions, VecBuffer};
 use crate::write;
 use std::cell::Cell;
 use std::marker::PhantomData;

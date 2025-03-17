@@ -131,7 +131,7 @@ mod tests {
     use crate::base_formatter::builders::*;
     use crate::base_formatter::format_element::tag;
     use crate::base_formatter::format_element::tag::*;
-    use crate::base_formatter::{FormatElement, FormatState, Buffer, VecBuffer};
+    use crate::base_formatter::{Buffer, FormatElement, FormatState, VecBuffer};
     use crate::{format_args, write};
 
     #[test]

@@ -2,8 +2,7 @@ use crate::base_formatter::builders::{if_group_breaks, text};
 use crate::base_formatter::formatter::Formatter;
 use crate::base_formatter::printer::PrinterOptions;
 use crate::base_formatter::{
-    Buffer,
-    AttributePosition, BracketSameLine, BracketSpacing, Expand, Format, FormatContext,
+    AttributePosition, BracketSameLine, BracketSpacing, Buffer, Expand, Format, FormatContext,
     FormatOptions, FormatResult, IndentStyle, IndentWidth, LineEnding, LineWidth, QuoteStyle,
 };
 use crate::write;
@@ -12,7 +11,8 @@ use std::fmt::Debug;
 use std::str::FromStr;
 
 #[derive(Debug, Clone)]
-pub struct JsFormatContext {
+pub struct JsFormatContext<'a> {
+    source_text: &'a str,
     options: JsFormatOptions,
     // /// The comments of the nodes and tokens in the program.
     // comments: Rc<JsComments>,
@@ -20,34 +20,27 @@ pub struct JsFormatContext {
     // source_map: Option<TransformSourceMap>,
 }
 
-impl JsFormatContext {
-    pub fn new(options: JsFormatOptions) -> Self {
-        Self { options }
+impl<'a> JsFormatContext<'a> {
+    pub fn new(source_text: &'a str, options: JsFormatOptions) -> Self {
+        Self {
+            source_text,
+            options,
+        }
+    }
+
+    pub fn source_text(&self) -> &'a str {
+        self.source_text
     }
 }
-
-#[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
-pub struct TabWidth(u8);
-
-impl From<u8> for TabWidth {
-    fn from(value: u8) -> Self {
-        TabWidth(value)
-    }
-}
-
-impl From<TabWidth> for u8 {
-    fn from(width: TabWidth) -> Self {
-        width.0
-    }
-}
-
-impl FormatContext for JsFormatContext {
+impl FormatContext for JsFormatContext<'_> {
     type Options = JsFormatOptions;
 
     fn options(&self) -> &Self::Options {
         &self.options
     }
 }
+
+// ---
 
 #[derive(Debug, Default, Clone)]
 pub struct JsFormatOptions {
@@ -326,6 +319,23 @@ impl fmt::Display for JsFormatOptions {
     }
 }
 
+// ---
+
+#[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
+pub struct TabWidth(u8);
+
+impl From<u8> for TabWidth {
+    fn from(value: u8) -> Self {
+        TabWidth(value)
+    }
+}
+
+impl From<TabWidth> for u8 {
+    fn from(width: TabWidth) -> Self {
+        width.0
+    }
+}
+
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 pub enum QuoteProperties {
     #[default]
@@ -482,7 +492,7 @@ impl FormatTrailingCommas {
     }
 }
 
-impl Format<JsFormatContext> for FormatTrailingCommas {
+impl Format<JsFormatContext<'_>> for FormatTrailingCommas {
     fn fmt(&self, f: &mut Formatter<JsFormatContext>) -> FormatResult<()> {
         if f.options().trailing_commas.is_none() {
             return Ok(());
