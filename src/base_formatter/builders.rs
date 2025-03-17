@@ -5,7 +5,7 @@ use crate::base_formatter::format_element::*;
 use crate::base_formatter::{
     Argument, Arguments, Format, FormatResult, Formatter, GroupId, format_element,
 };
-use crate::base_formatter::{Buffer, VecBuffer};
+use crate::base_formatter::{Buffer, VecBuffer, BufferExtensions};
 use crate::write;
 use std::cell::Cell;
 use std::marker::PhantomData;
@@ -2411,10 +2411,10 @@ where
 
     /// Adds a new node with the specified formatted content to the output, respecting any new lines
     /// that appear before the node in the input source.
-    pub fn entry(&mut self, node: (), content: &dyn Format<Context>) {
+    pub fn entry(&mut self, node: &(), content: &dyn Format<Context>) {
         self.result = self.result.and_then(|_| {
             if self.has_elements {
-                if get_lines_before(node) > 1 {
+                if get_lines_before(*node) > 1 {
                     write!(self.fmt, [empty_line()])?;
                 } else {
                     self.separator.fmt(self.fmt)?;
@@ -2455,7 +2455,7 @@ where
 }
 
 /// Get the number of line breaks between two consecutive SyntaxNodes in the tree
-pub fn get_lines_before(node: ()) -> usize {
+pub fn get_lines_before(_node: ()) -> usize {
     0 // TODO
 }
 

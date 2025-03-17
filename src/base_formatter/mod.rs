@@ -23,13 +23,13 @@
 
 mod arguments;
 mod buffer;
-mod macros;
 pub mod builders;
 pub mod diagnostics;
 pub mod format_element;
 mod format_extensions;
 pub mod formatter;
 pub mod group_id;
+mod macros;
 pub mod printer;
 pub mod token;
 
@@ -45,10 +45,8 @@ use crate::base_formatter::format_element::document::Document;
 #[cfg(debug_assertions)]
 use crate::base_formatter::printer::{Printer, PrinterOptions};
 pub use arguments::{Argument, Arguments};
-pub use buffer::{
-    Buffer, BufferExtensions, BufferSnapshot, Inspect, RemoveSoftLinesBuffer, VecBuffer,
-};
-pub use format_element::{FormatElement, LINE_TERMINATORS, normalize_newlines};
+pub use buffer::{Buffer, BufferExtensions, VecBuffer};
+pub use format_element::FormatElement;
 pub use group_id::GroupId;
 use std::num::ParseIntError;
 use std::str::FromStr;
@@ -706,22 +704,12 @@ where
 
         let printed = Printer::new(print_options).print(&self.document)?;
 
-        let printed = match self.context.source_map() {
-            Some(source_map) => source_map.map_printed(printed),
-            None => printed,
-        };
-
         Ok(printed)
     }
 
     pub fn print_with_indent(&self, indent: u16) -> PrintResult<Printed> {
         let print_options = self.context.options().as_print_options();
         let printed = Printer::new(print_options).print_with_indent(&self.document, indent)?;
-
-        let printed = match self.context.source_map() {
-            Some(source_map) => source_map.map_printed(printed),
-            None => printed,
-        };
 
         Ok(printed)
     }

@@ -106,7 +106,6 @@ impl Document {
                     }
                     FormatElement::StaticText { text } => text.contains('\n'),
                     FormatElement::DynamicText { text, .. } => text.contains('\n'),
-                    FormatElement::LocatedTokenText { slice, .. } => slice.contains('\n'),
                     FormatElement::ExpandParent
                     | FormatElement::Line(LineMode::Hard | LineMode::Empty) => true,
                     _ => false,

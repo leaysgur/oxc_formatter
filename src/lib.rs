@@ -163,26 +163,28 @@
 //! - the emitted code, when formatted again, differs from the original; this usually happens when removing/adding new
 //!     elements, and the grouping is not correctly set;
 
-// mod js;
-// mod jsx;
 mod base_formatter;
-// mod ts;
+mod format;
 // pub mod utils;
 
 #[rustfmt::skip]
 mod generated;
-pub mod context;
+mod context;
+
+use oxc_allocator::Allocator;
+use oxc_parser::{ParseOptions, Parser};
+use oxc_span::SourceType;
 
 use base_formatter::builders::text;
 use base_formatter::format_element::document::Document;
 use base_formatter::format_element::tag::Label;
 use base_formatter::formatter::Formatter;
 use base_formatter::{
-    Buffer, Format, FormatOwnedWithRule, FormatRefWithRule, FormatResult, FormatRule, FormatState,
+    Buffer, Format, FormatError, FormatRefWithRule, FormatResult, FormatRule, FormatState,
     Formatted, VecBuffer,
 };
 
-use crate::context::{JsFormatContext, JsFormatOptions};
+pub use crate::context::{JsFormatContext, JsFormatOptions};
 
 /// Used to get an object that knows how to format this object.
 pub(crate) trait AsFormat<Context> {
@@ -303,13 +305,12 @@ where
 pub(crate) type JsFormatter<'buf> = Formatter<'buf, JsFormatContext>;
 
 /// Rule for formatting a JavaScript [AstNode].
-pub(crate) trait FormatNodeRule<N>
-where
-    N: AstNode<Language = JsLanguage>,
-{
+pub(crate) trait FormatNodeRule<N> {
     fn fmt(&self, node: &N, f: &mut JsFormatter) -> FormatResult<()> {
         if self.is_suppressed(node, f) {
-            return write!(f, [format_suppressed_node(node.syntax())]);
+            // TODO
+            // return write!(f, [format_suppressed_node(node.syntax())]);
+            return write!(f, [text("TODO: suppressed node")]);
         }
 
         self.fmt_leading_comments(node, f)?;
@@ -345,7 +346,7 @@ where
     }
 
     /// Returns `true` if the node has a suppression comment and should use the same formatting as in the source document.
-    fn is_suppressed(&self, node: &N, f: &JsFormatter) -> bool {
+    fn is_suppressed(&self, _node: &N, _f: &JsFormatter) -> bool {
         // f.context().comments().is_suppressed(node.syntax())
         false // TODO
     }
@@ -354,7 +355,7 @@ where
     ///
     /// You may want to override this method if you want to manually handle the formatting of comments
     /// inside of the `fmt_fields` method or customize the formatting of the leading comments.
-    fn fmt_leading_comments(&self, node: &N, f: &mut JsFormatter) -> FormatResult<()> {
+    fn fmt_leading_comments(&self, _node: &N, _f: &mut JsFormatter) -> FormatResult<()> {
         // format_leading_comments(node.syntax()).fmt(f)
         Ok((/* TODO */))
     }
@@ -366,7 +367,7 @@ where
     /// no comments are dropped.
     ///
     /// A node can have dangling comments if all its children are tokens or if all node childrens are optional.
-    fn fmt_dangling_comments(&self, node: &N, f: &mut JsFormatter) -> FormatResult<()> {
+    fn fmt_dangling_comments(&self, _node: &N, _f: &mut JsFormatter) -> FormatResult<()> {
         // format_dangling_comments(node.syntax())
         //     .with_soft_block_indent()
         //     .fmt(f)
@@ -377,38 +378,9 @@ where
     ///
     /// You may want to override this method if you want to manually handle the formatting of comments
     /// inside of the `fmt_fields` method or customize the formatting of the trailing comments.
-    fn fmt_trailing_comments(&self, node: &N, f: &mut JsFormatter) -> FormatResult<()> {
+    fn fmt_trailing_comments(&self, _node: &N, _f: &mut JsFormatter) -> FormatResult<()> {
         // format_trailing_comments(node.syntax()).fmt(f)
         Ok((/* TODO */))
-    }
-}
-
-/// Rule for formatting an bogus node.
-pub(crate) trait FormatBogusNodeRule<N>
-where
-    N: AstNode<Language = JsLanguage>,
-{
-    fn fmt(&self, node: &N, f: &mut JsFormatter) -> FormatResult<()> {
-        format_bogus_node(node.syntax()).fmt(f)
-    }
-}
-
-/// Format implementation specific to JavaScript tokens.
-pub(crate) type FormatJsSyntaxToken = FormatToken<JsFormatContext>;
-
-impl AsFormat<JsFormatContext> for JsSyntaxToken {
-    type Format<'a> = FormatRefWithRule<'a, JsSyntaxToken, FormatJsSyntaxToken>;
-
-    fn format(&self) -> Self::Format<'_> {
-        FormatRefWithRule::new(self, FormatJsSyntaxToken::default())
-    }
-}
-
-impl IntoFormat<JsFormatContext> for JsSyntaxToken {
-    type Format = FormatOwnedWithRule<JsSyntaxToken, FormatJsSyntaxToken>;
-
-    fn into_format(self) -> Self::Format {
-        FormatOwnedWithRule::new(self, FormatJsSyntaxToken::default())
     }
 }
 
@@ -422,117 +394,40 @@ impl JsFormatLanguage {
     }
 }
 
-impl FormatLanguage for JsFormatLanguage {
-    type SyntaxLanguage = JsLanguage;
-    type Context = JsFormatContext;
-    type FormatRule = FormatJsSyntaxNode;
-
-    fn transform(
-        &self,
-        root: &SyntaxNode<Self::SyntaxLanguage>,
-    ) -> Option<(SyntaxNode<Self::SyntaxLanguage>, TransformSourceMap)> {
-        Some(transform(root.clone()))
-    }
-
-    fn is_range_formatting_node(&self, node: &JsSyntaxNode) -> bool {
-        let kind = node.kind();
-
-        // Do not format variable declaration nodes, format the whole statement instead
-        if matches!(kind, JsSyntaxKind::JS_VARIABLE_DECLARATION) {
-            return false;
-        }
-
-        AnyJsStatement::can_cast(kind)
-            || AnyJsDeclaration::can_cast(kind)
-            || matches!(
-                kind,
-                JsSyntaxKind::JS_DIRECTIVE | JsSyntaxKind::JS_EXPORT | JsSyntaxKind::JS_IMPORT
-            )
-    }
-
-    fn options(&self) -> &JsFormatOptions {
-        &self.options
-    }
-
-    fn create_context(
-        self,
-        root: &JsSyntaxNode,
-        source_map: Option<TransformSourceMap>,
-    ) -> Self::Context {
-        let comments = Comments::from_node(root, &JsCommentStyle, source_map.as_ref());
-        JsFormatContext::new(self.options, comments).with_source_map(source_map)
-    }
-}
-
 /// Formats a JavaScript (and its super languages) file based on its features.
 ///
 /// It returns a [Formatted] result, which the user can use to override a file.
-pub fn format_node(
+pub fn format_source(
+    source_text: &str,
+    source_type: SourceType,
     options: JsFormatOptions,
-    root: &JsSyntaxNode,
-) -> FormatResult<Formatted<JsFormatContext>> {
-    let (root, source_map) = match language.transform(&root.clone()) {
-        Some((transformed, source_map)) => {
-            // we don't need to insert the node back if it has the same offset
-            if &transformed == root {
-                (transformed, Some(source_map))
-            } else {
-                match root
-                    .ancestors()
-                    // ancestors() always returns self as the first element of the iterator.
-                    .skip(1)
-                    .last()
-                {
-                    // current root node is the topmost node we don't need to insert the transformed node back
-                    None => (transformed, Some(source_map)),
-                    Some(top_root) => {
-                        // we have to return transformed node back into subtree
-                        let transformed_range = transformed.text_range_with_trivia();
-                        let root_range = root.text_range_with_trivia();
+) -> Result<String, String> {
+    let allocator = Allocator::new();
+    let parser =
+        Parser::new(&allocator, source_text, source_type).with_options(ParseOptions::default());
+    let parsed = parser.parse();
 
-                        let transformed_root = top_root
-                            .replace_child(root.clone().into(), transformed.into())
-                            // SAFETY: Calling `unwrap` is safe because we know that `root` is part of the `top_root` subtree.
-                            .unwrap();
-                        let transformed = transformed_root.covering_element(TextRange::new(
-                            root_range.start(),
-                            root_range.start() + transformed_range.len(),
-                        ));
+    if !parsed.errors.is_empty() {
+        return Err("TODO: parse error".to_string());
+    }
 
-                        let node = match transformed {
-                            NodeOrToken::Node(node) => node,
-                            NodeOrToken::Token(token) => {
-                                // if we get a token we need to get the parent node
-                                token.parent().unwrap_or(transformed_root)
-                            }
-                        };
+    // TODO: Transform AST node
 
-                        (node, Some(source_map))
-                    }
-                }
-            }
-        }
-        None => (root.clone(), None),
-    };
+    let context = JsFormatContext::new(options /*comments*/);
+    let formatted = crate::format!(context, [parsed.program.format()])
+        .map_err(|_| "TODO: format error".to_string())?;
 
-    let context = language.create_context(&root);
-    let format_node = FormatRefWithRule::new(&root, L::FormatRule::default());
-
-    let mut state = FormatState::new(context);
-    let mut buffer = VecBuffer::new(&mut state);
-
-    crate::write!(buffer, [format_node])?;
-
-    let mut document = Document::from(buffer.into_vec());
-    document.propagate_expand();
-
-    let context = state.into_context();
+    // let context = state.into_context();
     // let comments = context.comments();
 
     // comments.assert_checked_all_suppressions(&root);
     // comments.assert_formatted_all_comments();
 
-    Ok(Formatted::new(document, context))
+    Ok(formatted
+        .print()
+        .map_err(|_| "TODO: print error".to_string())?
+        .into_code())
+
 }
 
 #[derive(Copy, Clone, Debug)]

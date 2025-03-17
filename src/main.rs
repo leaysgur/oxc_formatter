@@ -1,11 +1,11 @@
-use oxc_formatter::{FormatOptions, format_source};
+use oxc_formatter::{JsFormatOptions, format_source};
 use oxc_span::SourceType;
 
 fn main() {
     let source_text = "let a, b='Hey';const c =   [2,3,4]   ; call()";
     let source_type = SourceType::mjs();
 
-    let options = FormatOptions::default();
+    let options = JsFormatOptions::default();
     println!("🛠️ Format with options:");
     println!("{options:?}");
 

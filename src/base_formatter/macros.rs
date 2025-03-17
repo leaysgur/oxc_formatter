@@ -338,6 +338,7 @@ mod tests {
     use crate::base_formatter::builders::*;
     use crate::base_formatter::formatter::Formatter;
     use crate::base_formatter::{
+        Buffer,
         Format, FormatElement, FormatResult, FormatState, Formatted, SimpleFormatContext,
         SimpleFormatOptions, VecBuffer,
     };
