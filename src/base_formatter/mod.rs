@@ -33,26 +33,26 @@ mod macros;
 pub mod printer;
 pub mod token;
 
-use crate::base_formatter::formatter::Formatter;
-use crate::base_formatter::group_id::UniqueGroupIdBuilder;
 use std::fmt;
 use std::fmt::{Debug, Display};
-
-pub use crate::base_formatter::diagnostics::{
-    ActualStart, FormatError, InvalidDocumentError, PrintError,
-};
-use crate::base_formatter::format_element::document::Document;
-#[cfg(debug_assertions)]
-use crate::base_formatter::printer::{Printer, PrinterOptions};
-pub use arguments::{Argument, Arguments};
-pub use buffer::{Buffer, BufferExtensions, VecBuffer};
-pub use format_element::FormatElement;
-pub use group_id::GroupId;
 use std::num::ParseIntError;
 use std::str::FromStr;
+
+pub use arguments::{Argument, Arguments};
+pub use buffer::{Buffer, BufferExtensions, VecBuffer};
+pub use diagnostics::{ActualStart, FormatError, InvalidDocumentError, PrintError};
+pub use format_element::FormatElement;
+use format_element::document::Document;
+use formatter::Formatter;
+pub use group_id::GroupId;
+use group_id::UniqueGroupIdBuilder;
+#[cfg(debug_assertions)]
+use printer::{Printer, PrinterOptions};
 use token::string::Quote;
 
 pub type TextSize = u32;
+
+// ---
 
 #[derive(Debug, Default, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum IndentStyle {
@@ -609,6 +609,9 @@ pub trait FormatOptions {
     fn as_print_options(&self) -> PrinterOptions;
 }
 
+// ---
+
+// NOTE: Only used for tests now
 #[derive(Debug, Default, Eq, PartialEq)]
 pub struct SimpleFormatContext {
     options: SimpleFormatOptions,
@@ -628,6 +631,7 @@ impl FormatContext for SimpleFormatContext {
     }
 }
 
+// NOTE: Only used for tests now
 #[derive(Debug, Default, Eq, PartialEq, Copy, Clone)]
 pub struct SimpleFormatOptions {
     pub indent_style: IndentStyle,
@@ -668,6 +672,8 @@ impl Display for SimpleFormatOptions {
     }
 }
 
+// ---
+
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Formatted<Context> {
     document: Document,
@@ -706,14 +712,8 @@ where
 
         Ok(printed)
     }
-
-    pub fn print_with_indent(&self, indent: u16) -> PrintResult<Printed> {
-        let print_options = self.context.options().as_print_options();
-        let printed = Printer::new(print_options).print_with_indent(&self.document, indent)?;
-
-        Ok(printed)
-    }
 }
+
 pub type PrintResult<T> = Result<T, PrintError>;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -724,13 +724,6 @@ pub struct Printed {
 impl Printed {
     pub fn new(code: String) -> Self {
         Self { code }
-    }
-
-    /// Construct an empty formatter result
-    pub fn new_empty() -> Self {
-        Self {
-            code: String::new(),
-        }
     }
 
     /// Access the resulting code, borrowing the result
@@ -746,6 +739,8 @@ impl Printed {
 
 /// Public return type of the formatter
 pub type FormatResult<F> = Result<F, FormatError>;
+
+// ---
 
 /// Formatting trait for types that can create a formatted representation. The `biome_formatter` equivalent
 /// to [std::fmt::Display].
@@ -987,6 +982,8 @@ where
     }
 }
 
+// ---
+
 /// The `write` function takes a target buffer and an `Arguments` struct that can be precompiled with the `format_args!` macro.
 ///
 /// The arguments will be formatted in-order into the output buffer provided.
@@ -1088,6 +1085,8 @@ where
     Ok(Formatted::new(document, state.into_context()))
 }
 
+// ---
+
 /// This structure stores the state that is relevant for the formatting of the whole document.
 ///
 /// This structure is different from [crate::base_formatter::Formatter] in that the formatting infrastructure
@@ -1095,7 +1094,6 @@ where
 /// for the whole process of formatting a root with [crate::base_formatter::format!].
 pub struct FormatState<Context> {
     context: Context,
-
     group_id_builder: UniqueGroupIdBuilder,
 }
 
