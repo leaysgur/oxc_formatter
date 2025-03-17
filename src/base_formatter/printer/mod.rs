@@ -1,10 +1,10 @@
 mod call_stack;
 mod line_suffixes;
-mod printer_options;
+mod options;
 mod queue;
 mod stack;
 
-pub use printer_options::*;
+pub use options::*;
 
 use crate::base_formatter::format_element::{BestFittingElement, LineMode, PrintMode};
 use crate::base_formatter::{
