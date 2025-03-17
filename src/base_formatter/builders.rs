@@ -2411,10 +2411,10 @@ where
 
     /// Adds a new node with the specified formatted content to the output, respecting any new lines
     /// that appear before the node in the input source.
-    pub fn entry(&mut self, node: (), content: &dyn Format<Context>) {
+    pub fn entry(&mut self, node: &(), content: &dyn Format<Context>) {
         self.result = self.result.and_then(|_| {
             if self.has_elements {
-                if get_lines_before(node) > 1 {
+                if get_lines_before(*node) > 1 {
                     write!(self.fmt, [empty_line()])?;
                 } else {
                     self.separator.fmt(self.fmt)?;
