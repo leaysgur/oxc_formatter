@@ -166,7 +166,6 @@
 mod base_formatter;
 mod format;
 // pub mod utils;
-
 #[rustfmt::skip]
 mod generated;
 mod context;
@@ -175,19 +174,16 @@ use oxc_allocator::Allocator;
 use oxc_parser::{ParseOptions, Parser};
 use oxc_span::SourceType;
 
-use base_formatter::builders::text;
-use base_formatter::format_element::document::Document;
-use base_formatter::format_element::tag::Label;
-use base_formatter::formatter::Formatter;
-use base_formatter::{
-    Buffer, Format, FormatError, FormatRefWithRule, FormatResult, FormatRule, FormatState,
-    Formatted, VecBuffer,
-};
+use crate::base_formatter::builders::text;
+use crate::base_formatter::format_element::tag::Label;
+use crate::base_formatter::formatter::Formatter;
+use crate::base_formatter::{Buffer, FormatResult};
+use crate::context::JsFormatContext;
 
-pub use crate::context::{JsFormatContext, JsFormatOptions};
+pub use crate::context::JsFormatOptions;
 
 /// Used to get an object that knows how to format this object.
-pub(crate) trait AsFormat<Context> {
+trait AsFormat<Context> {
     type Format<'a>: base_formatter::Format<Context>
     where
         Self: 'a;
@@ -231,7 +227,7 @@ where
 /// Used to convert this object into an object that can be formatted.
 ///
 /// The difference to [AsFormat] is that this trait takes ownership of `self`.
-pub(crate) trait IntoFormat<Context> {
+trait IntoFormat<Context> {
     type Format: base_formatter::Format<Context>;
 
     fn into_format(self) -> Self::Format;
@@ -252,7 +248,7 @@ where
 }
 
 /// Formatting specific [Iterator] extensions
-pub(crate) trait FormattedIterExt {
+trait FormattedIterExt {
     /// Converts every item to an object that knows how to format it.
     fn formatted<Context>(self) -> FormattedIter<Self, Self::Item, Context>
     where
@@ -268,7 +264,7 @@ pub(crate) trait FormattedIterExt {
 
 impl<I> FormattedIterExt for I where I: std::iter::Iterator {}
 
-pub(crate) struct FormattedIter<Iter, Item, Context>
+struct FormattedIter<Iter, Item, Context>
 where
     Iter: Iterator<Item = Item>,
 {
@@ -302,10 +298,10 @@ where
 {
 }
 
-pub(crate) type JsFormatter<'buf> = Formatter<'buf, JsFormatContext>;
+type JsFormatter<'buf> = Formatter<'buf, JsFormatContext>;
 
 /// Rule for formatting a JavaScript [AstNode].
-pub(crate) trait FormatNodeRule<N> {
+trait FormatNodeRule<N> {
     fn fmt(&self, node: &N, f: &mut JsFormatter) -> FormatResult<()> {
         if self.is_suppressed(node, f) {
             // TODO
@@ -384,16 +380,6 @@ pub(crate) trait FormatNodeRule<N> {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct JsFormatLanguage {
-    options: JsFormatOptions,
-}
-impl JsFormatLanguage {
-    pub fn new(options: JsFormatOptions) -> Self {
-        Self { options }
-    }
-}
-
 /// Formats a JavaScript (and its super languages) file based on its features.
 ///
 /// It returns a [Formatted] result, which the user can use to override a file.
@@ -427,11 +413,10 @@ pub fn format_source(
         .print()
         .map_err(|_| "TODO: print error".to_string())?
         .into_code())
-
 }
 
 #[derive(Copy, Clone, Debug)]
-pub(crate) enum JsLabels {
+enum JsLabels {
     MemberChain,
 }
 
