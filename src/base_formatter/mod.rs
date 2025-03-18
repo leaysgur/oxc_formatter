@@ -51,6 +51,7 @@ use group_id::UniqueGroupIdBuilder;
 use printer::{Printer, PrinterOptions};
 use token::string::Quote;
 
+// TODO: Remove this?
 pub type TextSize = u32;
 
 // ---
@@ -579,6 +580,8 @@ impl fmt::Display for Expand {
     }
 }
 
+// ---
+
 /// Context object storing data relevant when formatting an object.
 pub trait FormatContext {
     type Options: FormatOptions;
@@ -609,8 +612,6 @@ pub trait FormatOptions {
     /// Derives the print options from the these format options
     fn as_print_options(&self) -> PrinterOptions;
 }
-
-// ---
 
 // NOTE: Only used for tests now
 #[derive(Debug, Default, Eq, PartialEq)]

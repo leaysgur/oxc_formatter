@@ -17,7 +17,7 @@ pub use crate::context::JsFormatOptions;
 
 /// Used to get an object that knows how to format this object.
 trait AsFormat<Context> {
-    type Format<'a>: base_formatter::Format<Context>
+    type Format<'a>: crate::base_formatter::Format<Context>
     where
         Self: 'a;
 
@@ -61,7 +61,7 @@ where
 ///
 /// The difference to [AsFormat] is that this trait takes ownership of `self`.
 trait IntoFormat<Context> {
-    type Format: base_formatter::Format<Context>;
+    type Format: crate::base_formatter::Format<Context>;
 
     fn into_format(self) -> Self::Format;
 }
@@ -131,11 +131,16 @@ where
 {
 }
 
+// ---
+
 /// 'ast is the lifetime of the source code (input), 'buf is the lifetime of the buffer (output)
 type JsFormatter<'ast, 'buf> = Formatter<'buf, JsFormatContext<'ast>>;
 
 /// Rule for formatting a JavaScript [AstNode].
-trait FormatNodeRule<N> {
+trait FormatNodeRule<N>
+where
+    N: oxc_span::GetSpan,
+{
     fn fmt(&self, node: &N, f: &mut JsFormatter) -> FormatResult<()> {
         if self.is_suppressed(node, f) {
             // TODO

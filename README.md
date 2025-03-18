@@ -13,5 +13,7 @@ PoC implementation of formatter for OXC AST, based on `biome(_js)_formatter`.
   - Should we manage `AstKind` stack somewhere like the current implementation?
   - `oxc_semantic`(will introduce with `oxc_traverse` for preprocessing AST) can be used?
 - Rust's orphans rule is not applied for us, some traits can be simplified?
+- How to debug?
+  - At least, may need `IRFormatContext` for `Document` to be restored
 - TBD...
 
