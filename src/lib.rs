@@ -1,75 +1,69 @@
-mod arguments;
-mod buffer;
-mod builders;
-mod context;
+mod base_formatter;
 mod format;
-mod format_element;
-mod formatter;
-mod group_id;
-mod macros;
-mod options;
-mod printer;
-mod state;
+mod context;
 
 use oxc_allocator::Allocator;
 use oxc_parser::{ParseOptions, Parser};
 use oxc_span::SourceType;
 
-use arguments::Arguments;
-use buffer::{Buffer, VecBuffer};
-use context::FormatContext;
-use format::FormatNode;
-use format_element::document::Document;
-use formatter::Formatter;
-pub use options::FormatOptions;
-use printer::Printer;
-use state::FormatState;
+use crate::base_formatter::format_element::tag::Label;
+use crate::base_formatter::formatter::Formatter;
+use crate::context::JsFormatContext;
+pub use crate::context::JsFormatOptions;
 
-// ---
+/// 'ast is the lifetime of the source code (input), 'buf is the lifetime of the buffer (output)
+type JsFormatter<'ast, 'buf> = Formatter<'buf, JsFormatContext<'ast>>;
 
-type PrintError = String; // TODO: diagnostics
-type PrintResult<T> = Result<T, PrintError>;
-type FormatError = String; // TODO: diagnostics
-type FormatResult<T> = Result<T, FormatError>;
-
-// ---
-
-#[inline(always)]
-fn write_with_formatter(output: &mut dyn Buffer, args: Arguments) {
-    let mut f = Formatter::new(output);
-    f.write_fmt(args);
-}
-
-// ---
-
+/// Formats a JavaScript (and its super languages) file based on its features.
+///
+/// It returns a [Formatted] result, which the user can use to override a file.
 pub fn format_source(
     source_text: &str,
     source_type: SourceType,
-    options: FormatOptions,
-) -> FormatResult<String> {
+    options: JsFormatOptions,
+) -> Result<String, String> {
     let allocator = Allocator::new();
-
-    // TEXT -> AST
     let parser =
         Parser::new(&allocator, source_text, source_type).with_options(ParseOptions::default());
     let parsed = parser.parse();
-    let program = parsed.program;
 
-    // TODO: Transform AST
+    if !parsed.errors.is_empty() {
+        return Err("TODO: parse error".to_string());
+    }
 
-    // TODO: How to share `source_text` around?
-    let mut state = FormatState::new(FormatContext::new(options));
-    let mut buffer = VecBuffer::new(&mut state);
+    // TODO: Transform AST node
 
-    // AST -> IR
-    program.fmt(&mut Formatter::new(&mut buffer));
+    let formatted = crate::format!(
+        JsFormatContext::new(source_text, options /*comments*/),
+        [parsed.program]
+    )
+    .map_err(|_| "TODO: format error".to_string())?;
 
-    let mut document = Document::from(buffer.into_vec());
-    document.propagate_expand();
+    // let context = state.into_context();
+    // let comments = context.comments();
 
-    // IR -> TEXT
-    let printer = Printer::new(state.into_context().options().as_print_options());
-    let printed = printer.print(&document)?;
+    // comments.assert_checked_all_suppressions(&root);
+    // comments.assert_formatted_all_comments();
 
-    Ok(printed)
+    Ok(formatted
+        .print()
+        .map_err(|_| "TODO: print error".to_string())?
+        .into_code())
+}
+
+#[derive(Copy, Clone, Debug)]
+enum JsLabels {
+    MemberChain,
+}
+
+impl Label for JsLabels {
+    fn id(&self) -> u64 {
+        *self as u64
+    }
+
+    fn debug_name(&self) -> &'static str {
+        match self {
+            JsLabels::MemberChain => "MemberChain",
+        }
+    }
 }

@@ -1,19 +1,21 @@
+pub mod document;
+pub mod tag;
+
+use crate::base_formatter::format_element::tag::{LabelId, Tag, TagKind};
 use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::rc::Rc;
 
-use crate::format_element::tag::{LabelId, Tag, TagKind};
-
 /// Language agnostic IR for formatting source code.
 ///
-/// Use the helper functions like [crate::builders::space], [crate::builders::soft_line_break] etc. defined in this file to create elements.
+/// Use the helper functions like [crate::base_formatter::builders::space], [crate::base_formatter::builders::soft_line_break] etc. defined in this file to create elements.
 #[derive(Clone, Eq, PartialEq)]
 pub enum FormatElement {
-    /// A space token, see [crate::builders::space] for documentation.
+    /// A space token, see [crate::base_formatter::builders::space] for documentation.
     Space,
     HardSpace,
-    /// A new line, see [crate::builders::soft_line_break], [crate::builders::hard_line_break], and [crate::builders::soft_line_break_or_space] for documentation.
+    /// A new line, see [crate::base_formatter::builders::soft_line_break], [crate::base_formatter::builders::hard_line_break], and [crate::base_formatter::builders::soft_line_break_or_space] for documentation.
     Line(LineMode),
 
     /// Forces the parent group to print in expanded mode.
@@ -73,13 +75,13 @@ impl std::fmt::Debug for FormatElement {
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum LineMode {
-    /// See [crate::builders::soft_line_break_or_space] for documentation.
+    /// See [crate::base_formatter::builders::soft_line_break_or_space] for documentation.
     SoftOrSpace,
-    /// See [crate::builders::soft_line_break] for documentation.
+    /// See [crate::base_formatter::builders::soft_line_break] for documentation.
     Soft,
-    /// See [crate::builders::hard_line_break] for documentation.
+    /// See [crate::base_formatter::builders::hard_line_break] for documentation.
     Hard,
-    /// See [crate::builders::empty_line] for documentation.
+    /// See [crate::base_formatter::builders::empty_line] for documentation.
     Empty,
 }
 
@@ -111,7 +113,7 @@ impl PrintMode {
 pub struct Interned(Rc<[FormatElement]>);
 
 impl Interned {
-    pub fn new(content: Vec<FormatElement>) -> Self {
+    pub(super) fn new(content: Vec<FormatElement>) -> Self {
         Self(content.into())
     }
 }
@@ -321,7 +323,7 @@ impl std::fmt::Debug for BestFittingElement {
 pub trait FormatElements {
     /// Returns true if this [FormatElement] is guaranteed to break across multiple lines by the printer.
     /// This is the case if this format element recursively contains a:
-    /// * [crate::builders::empty_line] or [crate::builders::hard_line_break]
+    /// * [crate::base_formatter::builders::empty_line] or [crate::base_formatter::builders::hard_line_break]
     /// * A token containing '\n'
     ///
     /// Use this with caution, this is only a heuristic and the printer may print the element over multiple
@@ -332,7 +334,7 @@ pub trait FormatElements {
     /// This is the case _only_ if this format element recursively contains a [FormatElement::Line].
     ///
     /// It's possible for [FormatElements::will_break] to return true while this function returns false,
-    /// such as when the group contains a [crate::builders::expand_parent] or some text within the group
+    /// such as when the group contains a [crate::base_formatter::builders::expand_parent] or some text within the group
     /// contains a newline. Neither of those cases directly contain a [FormatElement::Line], and so they
     /// do not _directly_ break.
     fn may_directly_break(&self) -> bool;
@@ -352,7 +354,8 @@ pub trait FormatElements {
 
 #[cfg(test)]
 mod tests {
-    use crate::format_element::{LINE_TERMINATORS, normalize_newlines};
+
+    use crate::base_formatter::format_element::{LINE_TERMINATORS, normalize_newlines};
 
     #[test]
     fn test_normalize_newlines() {

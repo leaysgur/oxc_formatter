@@ -1,12 +1,10 @@
+use crate::base_formatter::format_element::tag::{Tag, TagKind};
+use crate::base_formatter::printer::stack::{Stack, StackedStack};
+use crate::base_formatter::printer::{invalid_end_tag, invalid_start_tag};
+use crate::base_formatter::{FormatElement, PrintResult};
 use std::fmt::Debug;
 use std::iter::FusedIterator;
 use std::marker::PhantomData;
-
-use crate::PrintResult;
-use crate::format_element::FormatElement;
-use crate::format_element::tag::{Tag, TagKind};
-use crate::printer::stack::{Stack, StackedStack};
-use crate::printer::{invalid_end_tag, invalid_start_tag};
 
 /// Queue of [FormatElement]s.
 pub(super) trait Queue<'a> {
@@ -341,9 +339,10 @@ impl FitsEndPredicate for SingleEntryPredicate {
 
 #[cfg(test)]
 mod tests {
-    use crate::format_element::{FormatElement,LineMode};
-    use crate::format_element::tag::Tag;
-    use crate::printer::queue::{PrintQueue, Queue};
+    use crate::base_formatter::FormatElement;
+    use crate::base_formatter::format_element::LineMode;
+    use crate::base_formatter::format_element::tag::Tag;
+    use crate::base_formatter::printer::queue::{PrintQueue, Queue};
 
     #[test]
     fn extend_back_pop_last() {

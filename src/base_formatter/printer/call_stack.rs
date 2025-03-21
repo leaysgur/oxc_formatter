@@ -1,12 +1,10 @@
+use crate::base_formatter::format_element::PrintMode;
+use crate::base_formatter::format_element::tag::TagKind;
+use crate::base_formatter::printer::Indention;
+use crate::base_formatter::printer::stack::{Stack, StackedStack};
+use crate::base_formatter::{IndentStyle, InvalidDocumentError, PrintError, PrintResult};
 use std::fmt::Debug;
 use std::num::NonZeroU8;
-
-use crate::PrintResult;
-use crate::format_element::PrintMode;
-use crate::format_element::tag::TagKind;
-use crate::options::IndentStyle;
-use crate::printer::Indention;
-use crate::printer::stack::{Stack, StackedStack};
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub(super) enum StackFrameKind {
@@ -81,7 +79,10 @@ pub(super) trait CallStack {
             Some(StackFrame {
                 kind: StackFrameKind::Tag(expected_kind),
                 ..
-            }) => Err(Self::invalid_document_error(kind, Some(expected_kind))),
+            }) => Err(PrintError::InvalidDocument(Self::invalid_document_error(
+                kind,
+                Some(expected_kind),
+            ))),
             // Tried to pop the outer most stack frame, which is not valid
             Some(
                 frame @ StackFrame {
@@ -91,19 +92,29 @@ pub(super) trait CallStack {
             ) => {
                 // Put it back in to guarantee that the stack is never empty
                 self.stack_mut().push(frame);
-                Err(Self::invalid_document_error(kind, None))
+                Err(PrintError::InvalidDocument(Self::invalid_document_error(
+                    kind, None,
+                )))
             }
 
             // This should be unreachable but having it for completeness. Happens if the stack is empty.
-            None => Err(Self::invalid_document_error(kind, None)),
+            None => Err(PrintError::InvalidDocument(Self::invalid_document_error(
+                kind, None,
+            ))),
         }
     }
 
     #[cold]
-    fn invalid_document_error(end_kind: TagKind, start_kind: Option<TagKind>) -> String {
+    fn invalid_document_error(
+        end_kind: TagKind,
+        start_kind: Option<TagKind>,
+    ) -> InvalidDocumentError {
         match start_kind {
-            None => format!("{end_kind:?}"),
-            Some(start_kind) => format!("{start_kind:?} / {end_kind:?}"),
+            None => InvalidDocumentError::StartTagMissing { kind: end_kind },
+            Some(start_kind) => InvalidDocumentError::StartEndTagMismatch {
+                start_kind,
+                end_kind,
+            },
         }
     }
 
