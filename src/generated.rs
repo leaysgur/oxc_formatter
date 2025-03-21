@@ -6,7 +6,7 @@ use oxc_ast::ast::*;
 use crate::base_formatter::{FormatOwnedWithRule, FormatRefWithRule, FormatResult, FormatRule};
 use crate::{AsFormat, FormatNodeRule, IntoFormat, JsFormatContext, JsFormatter};
 
-impl FormatRule<Program<'_>, JsFormatContext<'_>> for crate::format::js::FormatProgram {
+impl<'ast> FormatRule<Program<'ast>, JsFormatContext<'ast>> for crate::format::js::FormatProgram {
     #[inline(always)]
     fn fmt(&self, node: &Program, f: &mut JsFormatter) -> FormatResult<()> {
         FormatNodeRule::<Program>::fmt(self, node, f)
@@ -15,7 +15,7 @@ impl FormatRule<Program<'_>, JsFormatContext<'_>> for crate::format::js::FormatP
 impl<'ast> AsFormat<JsFormatContext<'ast>> for Program<'ast> {
     type Format<'a>
         =
-        FormatRefWithRule<'a, Program<'a>, crate::format::js::FormatProgram, JsFormatContext<'ast>>
+        FormatRefWithRule<'a, Program<'ast>, crate::format::js::FormatProgram, JsFormatContext<'ast>>
     where
         Self: 'a;
     fn format(&self) -> Self::Format<'_> {
@@ -34,7 +34,7 @@ impl<'ast> AsFormat<JsFormatContext<'ast>> for Statement<'ast> {
     type Format<'a>
         = FormatRefWithRule<
         'a,
-        Statement<'a>,
+        Statement<'ast>,
         crate::format::js::FormatStatement,
         JsFormatContext<'ast>,
     >
@@ -57,7 +57,7 @@ impl<'ast> AsFormat<JsFormatContext<'ast>> for VariableDeclaration<'ast> {
     type Format<'a>
         = FormatRefWithRule<
         'a,
-        VariableDeclaration<'a>,
+        VariableDeclaration<'ast>,
         crate::format::js::FormatVariableDeclaration,
         JsFormatContext<'ast>,
     >
