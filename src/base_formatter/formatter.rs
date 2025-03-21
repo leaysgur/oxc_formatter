@@ -106,7 +106,7 @@ impl<'ast, 'buf, Context> Formatter<'buf, Context> {
         joiner: Joiner,
     ) -> JoinBuilder<'a, 'buf, Joiner, Context>
     where
-        Joiner: Format<'ast, Context>,
+        Joiner: Format<Context>,
     {
         JoinBuilder::with_separator(self, joiner)
     }

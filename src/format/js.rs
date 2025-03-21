@@ -1,53 +1,43 @@
 use oxc_ast::ast::*;
 use oxc_span::GetSpan;
 
-use crate::base_formatter::{Buffer, Format, FormatResult, FormatRule, builders::*};
-use crate::{AsFormat, FormatNodeRule, JsFormatContext, JsFormatter, write};
+use crate::base_formatter::{Buffer, Format, FormatResult, builders::*};
+use crate::{JsFormatContext, JsFormatter, write};
 
-#[derive(Debug, Clone, Default)]
-pub(crate) struct FormatProgram;
-impl FormatNodeRule<Program<'_>> for FormatProgram {
-    fn fmt_fields(&self, node: &Program, f: &mut JsFormatter) -> FormatResult<()> {
-        let Program { body, .. } = node;
+impl<'a> Format<JsFormatContext<'a>> for Program<'a> {
+    fn fmt_fields(&self, f: &mut JsFormatter<'a, '_>) -> FormatResult<()> {
+        let Program { body, .. } = self;
 
         write!(f, [text("// TODO: Program"), hard_line_break()])?;
 
+        let mut join = f.join_nodes_with_hardline();
         for stmt in body {
-            write!(f, [stmt.format()])?;
+            join.entry(&(), &stmt);
         }
-        Ok(())
-        // let mut join = f.join_nodes_with_hardline();
-        // for stmt in body {
-        //     join.entry(&(), &stmt.format());
-        // }
 
-        // join.finish()
+        join.finish()
     }
 }
 
-#[derive(Debug, Clone, Default)]
-pub(crate) struct FormatStatement;
-impl FormatRule<'_, Statement<'_>, JsFormatContext<'_>> for FormatStatement {
-    fn fmt(&self, node: &Statement, f: &mut JsFormatter) -> FormatResult<()> {
-        match node {
-            Statement::VariableDeclaration(stmt) => stmt.format().fmt(f),
+impl<'a> Format<JsFormatContext<'a>> for Statement<'a> {
+    fn fmt(&self, f: &mut JsFormatter<'a, '_>) -> FormatResult<()> {
+        match self {
+            Statement::VariableDeclaration(stmt) => stmt.fmt(f),
             _ => write!(
                 f,
                 [
                     text("// TODO: Statement"),
                     hard_line_break(),
-                    dynamic_text(node.span().source_text(f.context().source_text()))
+                    dynamic_text(self.span().source_text(f.context().source_text()))
                 ]
             ),
         }
     }
 }
 
-#[derive(Debug, Clone, Default)]
-pub(crate) struct FormatVariableDeclaration;
-impl FormatNodeRule<VariableDeclaration<'_>> for FormatVariableDeclaration {
-    fn fmt_fields(&self, node: &VariableDeclaration, f: &mut JsFormatter) -> FormatResult<()> {
-        let VariableDeclaration { kind, .. } = node;
+impl<'a> Format<JsFormatContext<'a>> for VariableDeclaration<'a> {
+    fn fmt_fields(&self, f: &mut JsFormatter) -> FormatResult<()> {
+        let VariableDeclaration { kind, .. } = self;
 
         write!(
             f,

@@ -35,11 +35,12 @@ pub mod printer;
 pub mod token;
 
 use std::fmt::Debug;
-use std::marker::PhantomData;
 
+use crate::write;
 pub use arguments::{Argument, Arguments};
 pub use buffer::{Buffer, BufferExtensions, VecBuffer};
 pub use context::*;
+use builders::text;
 pub use diagnostics::{ActualStart, FormatError, InvalidDocumentError, PrintError};
 pub use format_element::FormatElement;
 use format_element::document::Document;
@@ -148,14 +149,90 @@ pub type FormatResult<F> = Result<F, FormatError>;
 /// # Ok(())
 /// # }
 /// ```
-pub trait Format<'ast, Context> {
+pub trait Format<Context> {
     /// Formats the object using the given formatter.
-    fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()>;
+    fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
+        if self.is_suppressed(f) {
+            // TODO
+            // return write!(f, [format_suppressed_node(node.syntax())]);
+            return write!(f, [text("TODO: suppressed node")]);
+        }
+
+        self.fmt_leading_comments(f)?;
+        self.fmt_node(f)?;
+        self.fmt_dangling_comments(f)?;
+        self.fmt_trailing_comments(f)
+    }
+
+    /// Formats the node without comments. Ignores any suppression comments.
+    fn fmt_node(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
+        let needs_parentheses = self.needs_parentheses();
+
+        if needs_parentheses {
+            write!(f, [text("(")])?;
+        }
+
+        self.fmt_fields(f)?;
+
+        if needs_parentheses {
+            write!(f, [text(")")])?;
+        }
+
+        Ok(())
+    }
+
+    /// Formats the node's fields.
+    fn fmt_fields(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
+        Ok(())
+    }
+
+    /// Returns whether the node requires parens.
+    fn needs_parentheses(&self) -> bool {
+        false
+    }
+
+    /// Returns `true` if the node has a suppression comment and should use the same formatting as in the source document.
+    fn is_suppressed(&self, f: &mut Formatter<Context>) -> bool {
+        // f.context().comments().is_suppressed(node.syntax())
+        false // TODO
+    }
+
+    /// Formats the [leading comments](base_formatter::comments#leading-comments) of the node.
+    ///
+    /// You may want to override this method if you want to manually handle the formatting of comments
+    /// inside of the `fmt_fields` method or customize the formatting of the leading comments.
+    fn fmt_leading_comments(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
+        // format_leading_comments(node.syntax()).fmt(f)
+        Ok((/* TODO */))
+    }
+
+    /// Formats the [dangling comments](base_formatter::comments#dangling-comments) of the node.
+    ///
+    /// You should override this method if the node handled by this rule can have dangling comments because the
+    /// default implementation formats the dangling comments at the end of the node, which isn't ideal but ensures that
+    /// no comments are dropped.
+    ///
+    /// A node can have dangling comments if all its children are tokens or if all node childrens are optional.
+    fn fmt_dangling_comments(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
+        // format_dangling_comments(node.syntax())
+        //     .with_soft_block_indent()
+        //     .fmt(f)
+        Ok((/* TODO */))
+    }
+
+    /// Formats the [trailing comments](base_formatter::comments#trailing-comments) of the node.
+    ///
+    /// You may want to override this method if you want to manually handle the formatting of comments
+    /// inside of the `fmt_fields` method or customize the formatting of the trailing comments.
+    fn fmt_trailing_comments(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
+        // format_trailing_comments(node.syntax()).fmt(f)
+        Ok((/* TODO */))
+    }
 }
 
-impl<'ast, T, Context> Format<'ast, Context> for &T
+impl<T, Context> Format< Context> for &T
 where
-    T: ?Sized + Format<'ast, Context>,
+    T: ?Sized + Format< Context>,
 {
     #[inline(always)]
     fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
@@ -163,9 +240,9 @@ where
     }
 }
 
-impl<'ast, T, Context> Format<'ast, Context> for &mut T
+impl< T, Context> Format< Context> for &mut T
 where
-    T: ?Sized + Format<'ast, Context>,
+    T: ?Sized + Format<Context>,
 {
     #[inline(always)]
     fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
@@ -173,9 +250,9 @@ where
     }
 }
 
-impl<'ast, T, Context> Format<'ast, Context> for Option<T>
+impl<'ast, T, Context> Format<Context> for Option<T>
 where
-    T: Format<'ast, Context>,
+    T: Format<Context>,
 {
     fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         match self {
@@ -185,187 +262,13 @@ where
     }
 }
 
-impl<'ast, Context> Format<'ast, Context> for () {
+impl< Context> Format< Context> for () {
     #[inline]
     fn fmt(&self, _: &mut Formatter<Context>) -> FormatResult<()> {
         // Intentionally left empty
         Ok(())
     }
 }
-
-/// Rule that knows how to format an object of type `T`.
-///
-/// Implementing [Format] on the object itself is preferred over implementing [FormatRule] but
-/// this isn't possible inside of a dependent crate for external type.
-///
-/// For example, the `biome_js_formatter` crate isn't able to implement [Format] on `JsIfStatement`
-/// because both the [Format] trait and `JsIfStatement` are external types (Rust's orphan rule).
-///
-/// That's why the `biome_js_formatter` crate must define a new-type that implements the formatting
-/// of `JsIfStatement`.
-pub trait FormatRule<'ast, T, C> {
-    fn fmt(&self, item: &T, f: &mut Formatter<C>) -> FormatResult<()>;
-}
-
-/// Rule that supports customizing how it formats an object of type `T`.
-pub trait FormatRuleWithOptions<'ast, T, C>: FormatRule<'ast, T, C> {
-    type Options;
-
-    /// Returns a new rule that uses the given options to format an object.
-    fn with_options(self, options: Self::Options) -> Self;
-}
-
-/// Trait for an object that formats an object with a specified rule.
-///
-/// Gives access to the underlying item.
-///
-/// Useful in situation where a type itself doesn't implement [Format] (e.g. because of Rust's orphan rule)
-/// but you want to implement some common formatting logic.
-///
-/// ## Examples
-///
-/// This can be useful if you want to format a `SyntaxNode` inside biome_formatter.. `SyntaxNode` doesn't implement [Format]
-/// itself but the language specific crate implements `AsFormat` and `IntoFormat` for it and the returned [Format]
-/// implement [FormatWithRule].
-///
-/// ```ignore
-/// use biome_formatter::prelude::*;
-/// use biome_formatter::{format, Formatted, FormatWithRule};
-/// use biome_rowan::{Language, SyntaxNode};
-/// fn format_node<L: Language, F: FormatWithRule<SimpleFormatContext, Item=SyntaxNode<L>>>(node: F) -> FormatResult<Formatted<SimpleFormatContext>> {
-///     let formatted = format!(SimpleFormatContext::default(), [node]);
-///     let syntax = node.item();
-///     // Do something with syntax
-///     formatted;
-/// }
-/// ```
-pub trait FormatWithRule<'ast, Context>: Format<'ast, Context> {
-    type Item;
-
-    /// Returns the associated item
-    fn item(&self) -> &Self::Item;
-}
-
-/// Formats the referenced `item` with the specified rule.
-#[derive(Debug, Copy, Clone)]
-pub struct FormatRefWithRule<'ast, T, R, C>
-where
-    R: FormatRule<'ast, T, C>,
-{
-    item: &'ast T,
-    rule: R,
-    context: PhantomData<C>,
-}
-
-impl<'ast, T, R, C> FormatRefWithRule<'ast, T, R, C>
-where
-    R: FormatRule<'ast, T, C>,
-{
-    pub fn new(item: &'ast T, rule: R) -> Self {
-        Self {
-            item,
-            rule,
-            context: PhantomData,
-        }
-    }
-}
-
-impl<'ast, T, R, O, C> FormatRefWithRule<'ast, T, R, C>
-where
-    R: FormatRuleWithOptions<'ast, T, C, Options = O>,
-{
-    pub fn with_options(mut self, options: O) -> Self {
-        self.rule = self.rule.with_options(options);
-        self
-    }
-}
-
-impl<'ast, T, R, C> FormatWithRule<'ast, C> for FormatRefWithRule<'ast, T, R, C>
-where
-    R: FormatRule<'ast, T, C>,
-{
-    type Item = T;
-
-    fn item(&self) -> &Self::Item {
-        self.item
-    }
-}
-
-impl<'ast, T, R, C> Format<'ast, C> for FormatRefWithRule<'ast, T, R, C>
-where
-    R: FormatRule<'ast, T, C>,
-{
-    #[inline(always)]
-    fn fmt(&self, f: &mut Formatter<C>) -> FormatResult<()> {
-        self.rule.fmt(self.item, f)
-    }
-}
-
-/// Formats the `item` with the specified rule.
-#[derive(Debug, Clone)]
-pub struct FormatOwnedWithRule<'ast, T, R, C>
-where
-    R: FormatRule<'ast, T, C>,
-{
-    item: T,
-    rule: R,
-    context: PhantomData<(&'ast (), C)>,
-}
-
-impl<'ast, T, R, C> FormatOwnedWithRule<'ast, T, R, C>
-where
-    R: FormatRule<'ast, T, C>,
-{
-    pub fn new(item: T, rule: R) -> Self {
-        Self {
-            item,
-            rule,
-            context: PhantomData,
-        }
-    }
-
-    pub fn with_item(mut self, item: T) -> Self {
-        self.item = item;
-        self
-    }
-
-    pub fn into_item(self) -> T {
-        self.item
-    }
-}
-
-impl<'ast, T, R, C> Format<'ast, C> for FormatOwnedWithRule<'ast, T, R, C>
-where
-    R: FormatRule<'ast, T, C>,
-{
-    #[inline(always)]
-    fn fmt(&self, f: &mut Formatter<C>) -> FormatResult<()> {
-        self.rule.fmt(&self.item, f)
-    }
-}
-
-impl<'ast, T, R, O, C> FormatOwnedWithRule<'ast, T, R, C>
-where
-    R: FormatRuleWithOptions<'ast, T, C, Options = O>,
-{
-    pub fn with_options(mut self, options: O) -> Self {
-        self.rule = self.rule.with_options(options);
-        self
-    }
-}
-
-impl<'ast, T, R, C> FormatWithRule<'ast, C> for FormatOwnedWithRule<'ast, T, R, C>
-where
-    R: FormatRule<'ast, T, C>,
-{
-    type Item = T;
-
-    fn item(&self) -> &Self::Item {
-        &self.item
-    }
-}
-
-// ---
 
 /// The `write` function takes a target buffer and an `Arguments` struct that can be precompiled with the `format_args!` macro.
 ///

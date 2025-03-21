@@ -32,9 +32,9 @@ impl<'fmt, 'ast, Context> Argument<'fmt, 'ast, Context> {
     /// an object.
     #[doc(hidden)]
     #[inline]
-    pub fn new<F: Format<'ast, Context>>(value: &'fmt F) -> Self {
+    pub fn new<F: Format<Context>>(value: &'fmt F) -> Self {
         #[inline(always)]
-        fn formatter<'a, F: Format<'a, Context>, Context>(
+        fn formatter<F: Format<Context>, Context>(
             ptr: *const c_void,
             fmt: &mut Formatter<Context>,
         ) -> FormatResult<()> {
@@ -56,7 +56,7 @@ impl<'fmt, 'ast, Context> Argument<'fmt, 'ast, Context> {
     }
 }
 
-impl<'ast, Context> Format<'ast, Context> for Argument<'_, 'ast, Context> {
+impl<'ast, Context> Format<Context> for Argument<'_, 'ast, Context> {
     #[inline(always)]
     fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         self.format(f)
@@ -107,7 +107,7 @@ impl<'ast, Context> Clone for Arguments<'_, '_, Context> {
     }
 }
 
-impl<'ast, Context> Format<'ast, Context> for Arguments<'_, '_, Context> {
+impl<'ast, Context> Format<Context> for Arguments<'_, '_, Context> {
     #[inline(always)]
     fn fmt(&self, formatter: &mut Formatter<Context>) -> FormatResult<()> {
         formatter.write_fmt(*self)
@@ -120,7 +120,9 @@ impl<Context> std::fmt::Debug for Arguments<'_, '_, Context> {
     }
 }
 
-impl<'fmt, 'ast, Context> From<&'fmt Argument<'fmt, 'ast, Context>> for Arguments<'fmt,'ast, Context> {
+impl<'fmt, 'ast, Context> From<&'fmt Argument<'fmt, 'ast, Context>>
+    for Arguments<'fmt, 'ast, Context>
+{
     fn from(argument: &'fmt Argument<'fmt, 'ast, Context>) -> Self {
         Arguments::new(std::slice::from_ref(argument))
     }

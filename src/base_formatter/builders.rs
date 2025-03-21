@@ -201,7 +201,7 @@ impl Line {
     }
 }
 
-impl<'ast, Context> Format<'ast, Context> for Line {
+impl<Context> Format<Context> for Line {
     fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         f.write_element(FormatElement::Line(self.mode))
     }
@@ -264,7 +264,7 @@ pub struct StaticText {
     text: &'static str,
 }
 
-impl<'ast, Context> Format<'ast, Context> for StaticText {
+impl<Context> Format<Context> for StaticText {
     fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         f.write_element(FormatElement::StaticText { text: self.text })
     }
@@ -288,7 +288,7 @@ pub struct DynamicText<'a> {
     text: &'a str,
 }
 
-impl<'ast, Context> Format<'ast, Context> for DynamicText<'_> {
+impl<Context> Format<Context> for DynamicText<'_> {
     fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         f.write_element(FormatElement::DynamicText {
             text: self.text.to_string().into_boxed_str(),
@@ -334,7 +334,7 @@ fn debug_assert_no_newlines(text: &str) {
 #[inline]
 pub fn line_suffix<'ast, Content, Context>(inner: &'ast Content) -> LineSuffix<Context>
 where
-    Content: Format<'ast ,Context>,
+    Content: Format<Context>,
 {
     LineSuffix {
         content: Argument::new(inner),
@@ -346,7 +346,7 @@ pub struct LineSuffix<'fmt, 'ast, Context> {
     content: Argument<'fmt, 'ast, Context>,
 }
 
-impl<'ast, Context> Format<'ast, Context> for LineSuffix<'_, '_, Context> {
+impl<Context> Format<Context> for LineSuffix<'_, '_, Context> {
     fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         f.write_element(FormatElement::Tag(StartLineSuffix))?;
         Arguments::from(&self.content).fmt(f)?;
@@ -393,7 +393,7 @@ pub const fn line_suffix_boundary() -> LineSuffixBoundary {
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct LineSuffixBoundary;
 
-impl<'ast, Context> Format<'ast, Context> for LineSuffixBoundary {
+impl<'ast, Context> Format<Context> for LineSuffixBoundary {
     fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         f.write_element(FormatElement::LineSuffixBoundary)
     }
@@ -462,9 +462,12 @@ impl<'ast, Context> Format<'ast, Context> for LineSuffixBoundary {
 /// Use `Memoized.inspect(f)?.has_label(LabelId::of(MyLabels::Main)` if you need to know if some content breaks that should
 /// only be written later.
 #[inline]
-pub fn labelled<'ast, Content, Context>(label_id: LabelId, content: &'ast Content) -> FormatLabelled<Context>
+pub fn labelled<'ast, Content, Context>(
+    label_id: LabelId,
+    content: &'ast Content,
+) -> FormatLabelled<Context>
 where
-    Content: Format<'ast, Context>,
+    Content: Format<Context>,
 {
     FormatLabelled {
         label_id,
@@ -478,7 +481,7 @@ pub struct FormatLabelled<'fmt, 'ast, Context> {
     content: Argument<'fmt, 'ast, Context>,
 }
 
-impl<'ast, Context> Format<'ast, Context> for FormatLabelled<'_, '_, Context> {
+impl<'ast, Context> Format<Context> for FormatLabelled<'_, '_, Context> {
     fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         f.write_element(FormatElement::Tag(StartLabelled(self.label_id)))?;
         Arguments::from(&self.content).fmt(f)?;
@@ -606,7 +609,7 @@ pub fn maybe_space(should_insert: bool) -> Option<Space> {
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct Space;
 
-impl<'ast, Context> Format<'ast, Context> for Space {
+impl<Context> Format<Context> for Space {
     fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         f.write_element(FormatElement::Space)
     }
@@ -615,7 +618,7 @@ impl<'ast, Context> Format<'ast, Context> for Space {
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct HardSpace;
 
-impl<'ast, Context> Format<'ast, Context> for HardSpace {
+impl<Context> Format<Context> for HardSpace {
     fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         f.write_element(FormatElement::HardSpace)
     }
@@ -686,7 +689,7 @@ impl<'ast, Context> Format<'ast, Context> for HardSpace {
 #[inline]
 pub fn indent<'ast, Content, Context>(content: &'ast Content) -> Indent<Context>
 where
-    Content: Format<'ast, Context>,
+    Content: Format<Context>,
 {
     Indent {
         content: Argument::new(content),
@@ -698,7 +701,7 @@ pub struct Indent<'fmt, 'ast, Context> {
     content: Argument<'fmt, 'ast, Context>,
 }
 
-impl<'ast, Context> Format<'ast, Context> for Indent<'_, '_, Context> {
+impl<Context> Format<Context> for Indent<'_, '_, Context> {
     fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         f.write_element(FormatElement::Tag(StartIndent))?;
         Arguments::from(&self.content).fmt(f)?;
@@ -843,7 +846,7 @@ impl<Context> std::fmt::Debug for Indent<'_, '_, Context> {
 #[inline]
 pub fn dedent<'ast, Content, Context>(content: &'ast Content) -> Dedent<Context>
 where
-    Content: Format<'ast, Context>,
+    Content: Format<Context>,
 {
     Dedent {
         content: Argument::new(content),
@@ -857,7 +860,7 @@ pub struct Dedent<'fmt, 'ast, Context> {
     mode: DedentMode,
 }
 
-impl<'ast, Context> Format<'ast, Context> for Dedent<'_, '_, Context> {
+impl<'ast, Context> Format<Context> for Dedent<'_, '_, Context> {
     fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         f.write_element(FormatElement::Tag(StartDedent(self.mode)))?;
         Arguments::from(&self.content).fmt(f)?;
@@ -916,7 +919,7 @@ impl<Context> std::fmt::Debug for Dedent<'_, '_, Context> {
 #[inline]
 pub fn dedent_to_root<'ast, Content, Context>(content: &'ast Content) -> Dedent<Context>
 where
-    Content: Format<'ast, Context>,
+    Content: Format<Context>,
 {
     Dedent {
         content: Argument::new(content),
@@ -1029,7 +1032,7 @@ where
 /// * space indention: Printer indents the expression by 4 spaces (one indention level) **and** 2 spaces for the align.
 pub fn align<'ast, Content, Context>(count: u8, content: &'ast Content) -> Align<Context>
 where
-    Content: Format<'ast, Context>,
+    Content: Format<Context>,
 {
     Align {
         count: NonZeroU8::new(count).expect("Alignment count must be a non-zero number."),
@@ -1043,7 +1046,7 @@ pub struct Align<'fmt, 'ast, Context> {
     content: Argument<'fmt, 'ast, Context>,
 }
 
-impl<'ast, Context> Format<'ast, Context> for Align<'_, '_, Context> {
+impl<Context> Format<Context> for Align<'_, '_, Context> {
     fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         f.write_element(FormatElement::Tag(StartAlign(tag::Align(self.count))))?;
         Arguments::from(&self.content).fmt(f)?;
@@ -1095,7 +1098,7 @@ impl<Context> std::fmt::Debug for Align<'_, '_, Context> {
 /// # }
 /// ```
 #[inline]
-pub fn block_indent<'ast, Context>(content: &'ast impl Format<'ast, Context>) -> BlockIndent<Context> {
+pub fn block_indent<'ast, Context>(content: &'ast impl Format<Context>) -> BlockIndent<Context> {
     BlockIndent {
         content: Argument::new(content),
         mode: IndentMode::Block,
@@ -1166,7 +1169,9 @@ pub fn block_indent<'ast, Context>(content: &'ast impl Format<'ast, Context>) ->
 /// # }
 /// ```
 #[inline]
-pub fn soft_block_indent<'ast, Context>(content: &'ast impl Format<'ast, Context>) -> BlockIndent<Context> {
+pub fn soft_block_indent<'ast, Context>(
+    content: &'ast impl Format<Context>,
+) -> BlockIndent<Context> {
     BlockIndent {
         content: Argument::new(content),
         mode: IndentMode::Soft,
@@ -1267,7 +1272,7 @@ pub fn soft_block_indent<'ast, Context>(content: &'ast impl Format<'ast, Context
 /// # }
 /// ```
 pub fn soft_block_indent_with_maybe_space<'ast, Context>(
-    content: &'ast impl Format<'ast, Context>,
+    content: &'ast impl Format<Context>,
     should_add_space: bool,
 ) -> BlockIndent<Context> {
     if should_add_space {
@@ -1344,7 +1349,9 @@ pub fn soft_block_indent_with_maybe_space<'ast, Context>(
 /// # }
 /// ```
 #[inline]
-pub fn soft_line_indent_or_space<'ast, Context>(content: &'ast impl Format<'ast, Context>) -> BlockIndent<Context> {
+pub fn soft_line_indent_or_space<'ast, Context>(
+    content: &'ast impl Format<Context>,
+) -> BlockIndent<Context> {
     BlockIndent {
         content: Argument::new(content),
         mode: IndentMode::SoftLineOrSpace,
@@ -1445,7 +1452,7 @@ pub fn soft_line_indent_or_space<'ast, Context>(content: &'ast impl Format<'ast,
 /// ```
 #[inline]
 pub fn soft_line_indent_or_hard_space<'ast, Context>(
-    content: &'ast impl Format<'ast, Context>,
+    content: &'ast impl Format<Context>,
 ) -> BlockIndent<Context> {
     BlockIndent {
         content: Argument::new(content),
@@ -1468,7 +1475,7 @@ enum IndentMode {
     SoftLineOrSpace,
 }
 
-impl<'ast, Context> Format<'ast, Context> for BlockIndent<'_, '_, Context> {
+impl<Context> Format<Context> for BlockIndent<'_, '_, Context> {
     fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         let snapshot = f.snapshot();
 
@@ -1582,7 +1589,9 @@ impl<Context> std::fmt::Debug for BlockIndent<'_, '_, Context> {
 /// # Ok(())
 /// # }
 /// ```
-pub fn soft_space_or_block_indent<'ast, Context>(content: &'ast impl Format<'ast, Context>) -> BlockIndent<Context> {
+pub fn soft_space_or_block_indent<'ast, Context>(
+    content: &'ast impl Format<Context>,
+) -> BlockIndent<Context> {
     BlockIndent {
         content: Argument::new(content),
         mode: IndentMode::SoftSpace,
@@ -1662,7 +1671,7 @@ pub fn soft_space_or_block_indent<'ast, Context>(content: &'ast impl Format<'ast
 /// # }
 /// ```
 #[inline]
-pub fn group<'ast, Context>(content: &'ast impl Format<'ast, Context>) -> Group<Context> {
+pub fn group<'ast, Context>(content: &'ast impl Format<Context>) -> Group<Context> {
     Group {
         content: Argument::new(content),
         group_id: None,
@@ -1695,7 +1704,7 @@ impl<Context> Group<'_, '_, Context> {
     }
 }
 
-impl<'ast, Context> Format<'ast, Context> for Group<'_, '_, Context> {
+impl<Context> Format<Context> for Group<'_, '_, Context> {
     fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         let mode = match self.should_expand {
             true => GroupMode::Expand,
@@ -1765,7 +1774,7 @@ pub const fn expand_parent() -> ExpandParent {
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct ExpandParent;
 
-impl<'ast, Context> Format<'ast, Context> for ExpandParent {
+impl<Context> Format<Context> for ExpandParent {
     fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         f.write_element(FormatElement::ExpandParent)
     }
@@ -1847,7 +1856,7 @@ impl<'ast, Context> Format<'ast, Context> for ExpandParent {
 #[inline]
 pub fn if_group_breaks<'ast, Content, Context>(content: &'ast Content) -> IfGroupBreaks<Context>
 where
-    Content: Format<'ast, Context>,
+    Content: Format<Context>,
 {
     IfGroupBreaks {
         content: Argument::new(content),
@@ -1926,9 +1935,11 @@ where
 /// # }
 /// ```
 #[inline]
-pub fn if_group_fits_on_line<'ast, Content, Context>(flat_content: &'ast Content) -> IfGroupBreaks<Context>
+pub fn if_group_fits_on_line<'ast, Content, Context>(
+    flat_content: &'ast Content,
+) -> IfGroupBreaks<Context>
 where
-    Content: Format<'ast, Context>,
+    Content: Format<Context>,
 {
     IfGroupBreaks {
         mode: PrintMode::Flat,
@@ -2004,7 +2015,7 @@ impl<Context> IfGroupBreaks<'_, '_, Context> {
     }
 }
 
-impl<'ast, Context> Format<'ast, Context> for IfGroupBreaks<'_, '_, Context> {
+impl<Context> Format<Context> for IfGroupBreaks<'_, '_, Context> {
     fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         f.write_element(FormatElement::Tag(StartConditionalContent(
             Condition::new(self.mode).with_group_id(self.group_id),
@@ -2114,7 +2125,7 @@ pub fn indent_if_group_breaks<'ast, Content, Context>(
     group_id: GroupId,
 ) -> IndentIfGroupBreaks<Context>
 where
-    Content: Format<'ast, Context>,
+    Content: Format<Context>,
 {
     IndentIfGroupBreaks {
         group_id,
@@ -2128,7 +2139,7 @@ pub struct IndentIfGroupBreaks<'fmt, 'ast, Context> {
     group_id: GroupId,
 }
 
-impl<'ast, Context> Format<'ast, Context> for IndentIfGroupBreaks<'_, '_, Context> {
+impl<Context> Format< Context> for IndentIfGroupBreaks<'_, '_, Context> {
     fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         f.write_element(FormatElement::Tag(StartIndentIfGroupBreaks(self.group_id)))?;
         Arguments::from(&self.content).fmt(f)?;
@@ -2152,7 +2163,7 @@ pub struct FormatWith<Context, T> {
     context: PhantomData<Context>,
 }
 
-impl<'ast, Context, T> Format<'ast, Context> for FormatWith<Context, T>
+impl< Context, T> Format< Context> for FormatWith<Context, T>
 where
     T: Fn(&mut Formatter<Context>) -> FormatResult<()>,
 {
@@ -2298,7 +2309,7 @@ pub struct FormatOnce<T, Context> {
     context: PhantomData<Context>,
 }
 
-impl<'ast, T, Context> Format<'ast, Context> for FormatOnce<T, Context>
+impl< T, Context> Format< Context> for FormatOnce<T, Context>
 where
     T: FnOnce(&mut Formatter<Context>) -> FormatResult<()>,
 {
@@ -2326,9 +2337,9 @@ pub struct JoinBuilder<'fmt, 'buf, Separator, Context> {
     has_elements: bool,
 }
 
-impl<'ast, 'fmt, 'buf, Separator, Context> JoinBuilder<'fmt, 'buf, Separator, Context>
+impl<'fmt, 'buf, Separator, Context> JoinBuilder<'fmt, 'buf, Separator, Context>
 where
-    Separator: Format<'ast, Context>,
+    Separator: Format< Context>,
 {
     /// Creates a new instance that joins the elements without a separator
     pub(super) fn new(fmt: &'fmt mut Formatter<'buf, Context>) -> Self {
@@ -2369,7 +2380,7 @@ where
     /// Adds the contents of an iterator of entries to the join output.
     pub fn entries<F, I>(&mut self, entries: I) -> &mut Self
     where
-        F: Format<'ast, Context>,
+        F: Format<Context>,
         I: IntoIterator<Item = F>,
     {
         for entry in entries {
@@ -2396,9 +2407,9 @@ pub struct JoinNodesBuilder<'fmt, 'buf, Separator, Context> {
     has_elements: bool,
 }
 
-impl<'ast, 'fmt, 'buf, Separator, Context> JoinNodesBuilder<'fmt, 'buf, Separator, Context>
+impl< 'fmt, 'buf, Separator, Context> JoinNodesBuilder<'fmt, 'buf, Separator, Context>
 where
-    Separator: Format<'ast, Context>,
+    Separator: Format< Context>,
 {
     pub(super) fn new(separator: Separator, fmt: &'fmt mut Formatter<'buf, Context>) -> Self {
         Self {
@@ -2439,7 +2450,7 @@ where
     /// Adds an iterator of entries to the output. Each entry is a `(node, content)` tuple.
     pub fn entries<F, I>(&mut self, entries: I) -> &mut Self
     where
-        F: Format<'ast, Context>,
+        F: Format< Context>,
         I: IntoIterator<Item = ((), F)>,
     {
         for (node, content) in entries {
@@ -2467,7 +2478,7 @@ pub struct FillBuilder<'fmt, 'buf, Context> {
     empty: bool,
 }
 
-impl<'ast, 'fmt, 'buf, Context> FillBuilder<'fmt, 'buf, Context> {
+impl< 'fmt, 'buf, Context> FillBuilder<'fmt, 'buf, Context> {
     pub(crate) fn new(fmt: &'fmt mut Formatter<'buf, Context>) -> Self {
         let result = fmt.write_element(FormatElement::Tag(StartFill));
 
@@ -2481,7 +2492,7 @@ impl<'ast, 'fmt, 'buf, Context> FillBuilder<'fmt, 'buf, Context> {
     /// Adds an iterator of entries to the fill output. Uses the passed `separator` to separate any two items.
     pub fn entries<F, I>(&mut self, separator: &dyn Format<Context>, entries: I) -> &mut Self
     where
-        F: Format<'ast, Context>,
+        F: Format< Context>,
         I: IntoIterator<Item = F>,
     {
         for entry in entries {
@@ -2553,7 +2564,7 @@ impl<'fmt, 'ast, Context> BestFitting<'fmt, 'ast, Context> {
     }
 }
 
-impl<'ast, Context> Format<'ast, Context> for BestFitting<'_, '_, Context> {
+impl<'ast, Context> Format<Context> for BestFitting<'_, '_, Context> {
     fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         let mut buffer = VecBuffer::new(f.state_mut());
         let variants = self.variants.items();
