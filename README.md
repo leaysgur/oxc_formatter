@@ -7,8 +7,6 @@ PoC implementation of formatter for OXC AST, based on `biome(_js)_formatter`.
 - Rust's orphan rule constraints don't apply to us?
   - If so, some trait implementations might be simplified
   - But that would mean handling OXC AST nodes directly in the logic instead of intermediate structs, would that cause any problems?
-- OXC's AST strictly manages lifetimes `<'a>`, but Biome's AST doesn't seem to do so
-  - Even simple things result in "lifetime may not live long enough" errors, so we need to solve this...?
 - ---
 - How to know parent, ancestors?
   - In Biome, each node seems to know its parent, but not in OXC
