@@ -9,32 +9,32 @@ use std::marker::PhantomData;
 /// This struct is similar to a dynamic dispatch (using `dyn Format`) because it stores a pointer to the value.
 /// However, it doesn't store the pointer to `dyn Format`'s vtable, instead it statically resolves the function
 /// pointer of `Format::format` and stores it in `formatter`.
-pub struct Argument<'fmt, Context> {
+pub struct Argument<'fmt, 'ast, Context> {
     /// The value to format stored as a raw pointer where `lifetime` stores the value's lifetime.
     value: *const c_void,
 
     /// Stores the lifetime of the value. To get the most out of our dear borrow checker.
-    lifetime: PhantomData<&'fmt ()>,
+    lifetime: PhantomData<(&'fmt (), &'ast ())>,
 
     /// The function pointer to `value`'s `Format::format` method
     formatter: fn(*const c_void, &mut Formatter<'_, Context>) -> FormatResult<()>,
 }
 
-impl<Context> Clone for Argument<'_, Context> {
+impl<'ast, Context> Clone for Argument<'_, 'ast, Context> {
     fn clone(&self) -> Self {
         *self
     }
 }
-impl<Context> Copy for Argument<'_, Context> {}
+impl<'ast, Context> Copy for Argument<'_, 'ast, Context> {}
 
-impl<'fmt, Context> Argument<'fmt, Context> {
+impl<'fmt, 'ast, Context> Argument<'fmt, 'ast, Context> {
     /// Called by the [biome_formatter::format_args] macro. Creates a mono-morphed value for formatting
     /// an object.
     #[doc(hidden)]
     #[inline]
-    pub fn new<F: Format<Context>>(value: &'fmt F) -> Self {
+    pub fn new<F: Format<'ast, Context>>(value: &'fmt F) -> Self {
         #[inline(always)]
-        fn formatter<F: Format<Context>, Context>(
+        fn formatter<'a, F: Format<'a, Context>, Context>(
             ptr: *const c_void,
             fmt: &mut Formatter<Context>,
         ) -> FormatResult<()> {
@@ -56,7 +56,7 @@ impl<'fmt, Context> Argument<'fmt, Context> {
     }
 }
 
-impl<Context> Format<Context> for Argument<'_, Context> {
+impl<'ast, Context> Format<'ast, Context> for Argument<'_, 'ast, Context> {
     #[inline(always)]
     fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         self.format(f)
@@ -83,45 +83,45 @@ impl<Context> Format<Context> for Argument<'_, Context> {
 /// # Ok(())
 /// # }
 /// ```
-pub struct Arguments<'fmt, Context>(pub &'fmt [Argument<'fmt, Context>]);
+pub struct Arguments<'fmt, 'ast, Context>(pub &'fmt [Argument<'fmt, 'ast, Context>]);
 
-impl<'fmt, Context> Arguments<'fmt, Context> {
+impl<'fmt, 'ast, Context> Arguments<'fmt, 'ast, Context> {
     #[doc(hidden)]
     #[inline(always)]
-    pub fn new(arguments: &'fmt [Argument<'fmt, Context>]) -> Self {
+    pub fn new(arguments: &'fmt [Argument<'fmt, 'ast, Context>]) -> Self {
         Self(arguments)
     }
 
     /// Returns the arguments
     #[inline]
-    pub fn items(&self) -> &'fmt [Argument<'fmt, Context>] {
+    pub fn items(&self) -> &'fmt [Argument<'fmt, 'ast, Context>] {
         self.0
     }
 }
 
-impl<Context> Copy for Arguments<'_, Context> {}
+impl<'ast, Context> Copy for Arguments<'_, '_, Context> {}
 
-impl<Context> Clone for Arguments<'_, Context> {
+impl<'ast, Context> Clone for Arguments<'_, '_, Context> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<Context> Format<Context> for Arguments<'_, Context> {
+impl<'ast, Context> Format<'ast, Context> for Arguments<'_, '_, Context> {
     #[inline(always)]
     fn fmt(&self, formatter: &mut Formatter<Context>) -> FormatResult<()> {
         formatter.write_fmt(*self)
     }
 }
 
-impl<Context> std::fmt::Debug for Arguments<'_, Context> {
+impl<Context> std::fmt::Debug for Arguments<'_, '_, Context> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str("Arguments[...]")
     }
 }
 
-impl<'fmt, Context> From<&'fmt Argument<'fmt, Context>> for Arguments<'fmt, Context> {
-    fn from(argument: &'fmt Argument<'fmt, Context>) -> Self {
+impl<'fmt, 'ast, Context> From<&'fmt Argument<'fmt, 'ast, Context>> for Arguments<'fmt,'ast, Context> {
+    fn from(argument: &'fmt Argument<'fmt, 'ast, Context>) -> Self {
         Arguments::new(std::slice::from_ref(argument))
     }
 }

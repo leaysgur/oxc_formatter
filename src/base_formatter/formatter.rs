@@ -13,7 +13,7 @@ pub struct Formatter<'buf, Context> {
     pub(super) buffer: &'buf mut dyn Buffer<Context = Context>,
 }
 
-impl<'buf, Context> Formatter<'buf, Context> {
+impl<'ast, 'buf, Context> Formatter<'buf, Context> {
     /// Creates a new context that uses the given formatter context
     pub fn new(buffer: &'buf mut (dyn Buffer<Context = Context> + 'buf)) -> Self {
         Self { buffer }
@@ -106,7 +106,7 @@ impl<'buf, Context> Formatter<'buf, Context> {
         joiner: Joiner,
     ) -> JoinBuilder<'a, 'buf, Joiner, Context>
     where
-        Joiner: Format<Context>,
+        Joiner: Format<'ast, Context>,
     {
         JoinBuilder::with_separator(self, joiner)
     }

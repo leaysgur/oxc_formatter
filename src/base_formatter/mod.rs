@@ -148,14 +148,14 @@ pub type FormatResult<F> = Result<F, FormatError>;
 /// # Ok(())
 /// # }
 /// ```
-pub trait Format<Context> {
+pub trait Format<'ast, Context> {
     /// Formats the object using the given formatter.
     fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()>;
 }
 
-impl<T, Context> Format<Context> for &T
+impl<'ast, T, Context> Format<'ast, Context> for &T
 where
-    T: ?Sized + Format<Context>,
+    T: ?Sized + Format<'ast, Context>,
 {
     #[inline(always)]
     fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
@@ -163,9 +163,9 @@ where
     }
 }
 
-impl<T, Context> Format<Context> for &mut T
+impl<'ast, T, Context> Format<'ast, Context> for &mut T
 where
-    T: ?Sized + Format<Context>,
+    T: ?Sized + Format<'ast, Context>,
 {
     #[inline(always)]
     fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
@@ -173,9 +173,9 @@ where
     }
 }
 
-impl<T, Context> Format<Context> for Option<T>
+impl<'ast, T, Context> Format<'ast, Context> for Option<T>
 where
-    T: Format<Context>,
+    T: Format<'ast, Context>,
 {
     fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         match self {
@@ -185,7 +185,7 @@ where
     }
 }
 
-impl<Context> Format<Context> for () {
+impl<'ast, Context> Format<'ast, Context> for () {
     #[inline]
     fn fmt(&self, _: &mut Formatter<Context>) -> FormatResult<()> {
         // Intentionally left empty
@@ -203,12 +203,12 @@ impl<Context> Format<Context> for () {
 ///
 /// That's why the `biome_js_formatter` crate must define a new-type that implements the formatting
 /// of `JsIfStatement`.
-pub trait FormatRule<T, C> {
+pub trait FormatRule<'ast, T, C> {
     fn fmt(&self, item: &T, f: &mut Formatter<C>) -> FormatResult<()>;
 }
 
 /// Rule that supports customizing how it formats an object of type `T`.
-pub trait FormatRuleWithOptions<T, C>: FormatRule<T, C> {
+pub trait FormatRuleWithOptions<'ast, T, C>: FormatRule<'ast, T, C> {
     type Options;
 
     /// Returns a new rule that uses the given options to format an object.
@@ -239,7 +239,7 @@ pub trait FormatRuleWithOptions<T, C>: FormatRule<T, C> {
 ///     formatted;
 /// }
 /// ```
-pub trait FormatWithRule<Context>: Format<Context> {
+pub trait FormatWithRule<'ast, Context>: Format<'ast, Context> {
     type Item;
 
     /// Returns the associated item
@@ -248,20 +248,20 @@ pub trait FormatWithRule<Context>: Format<Context> {
 
 /// Formats the referenced `item` with the specified rule.
 #[derive(Debug, Copy, Clone)]
-pub struct FormatRefWithRule<'a, T, R, C>
+pub struct FormatRefWithRule<'ast, T, R, C>
 where
-    R: FormatRule<T, C>,
+    R: FormatRule<'ast, T, C>,
 {
-    item: &'a T,
+    item: &'ast T,
     rule: R,
     context: PhantomData<C>,
 }
 
-impl<'a, T, R, C> FormatRefWithRule<'a, T, R, C>
+impl<'ast, T, R, C> FormatRefWithRule<'ast, T, R, C>
 where
-    R: FormatRule<T, C>,
+    R: FormatRule<'ast, T, C>,
 {
-    pub fn new(item: &'a T, rule: R) -> Self {
+    pub fn new(item: &'ast T, rule: R) -> Self {
         Self {
             item,
             rule,
@@ -270,9 +270,9 @@ where
     }
 }
 
-impl<T, R, O, C> FormatRefWithRule<'_, T, R, C>
+impl<'ast, T, R, O, C> FormatRefWithRule<'ast, T, R, C>
 where
-    R: FormatRuleWithOptions<T, C, Options = O>,
+    R: FormatRuleWithOptions<'ast, T, C, Options = O>,
 {
     pub fn with_options(mut self, options: O) -> Self {
         self.rule = self.rule.with_options(options);
@@ -280,9 +280,9 @@ where
     }
 }
 
-impl<T, R, C> FormatWithRule<C> for FormatRefWithRule<'_, T, R, C>
+impl<'ast, T, R, C> FormatWithRule<'ast, C> for FormatRefWithRule<'ast, T, R, C>
 where
-    R: FormatRule<T, C>,
+    R: FormatRule<'ast, T, C>,
 {
     type Item = T;
 
@@ -291,9 +291,9 @@ where
     }
 }
 
-impl<T, R, C> Format<C> for FormatRefWithRule<'_, T, R, C>
+impl<'ast, T, R, C> Format<'ast, C> for FormatRefWithRule<'ast, T, R, C>
 where
-    R: FormatRule<T, C>,
+    R: FormatRule<'ast, T, C>,
 {
     #[inline(always)]
     fn fmt(&self, f: &mut Formatter<C>) -> FormatResult<()> {
@@ -303,18 +303,18 @@ where
 
 /// Formats the `item` with the specified rule.
 #[derive(Debug, Clone)]
-pub struct FormatOwnedWithRule<T, R, C>
+pub struct FormatOwnedWithRule<'ast, T, R, C>
 where
-    R: FormatRule<T, C>,
+    R: FormatRule<'ast, T, C>,
 {
     item: T,
     rule: R,
-    context: PhantomData<C>,
+    context: PhantomData<(&'ast (), C)>,
 }
 
-impl<T, R, C> FormatOwnedWithRule<T, R, C>
+impl<'ast, T, R, C> FormatOwnedWithRule<'ast, T, R, C>
 where
-    R: FormatRule<T, C>,
+    R: FormatRule<'ast, T, C>,
 {
     pub fn new(item: T, rule: R) -> Self {
         Self {
@@ -334,9 +334,9 @@ where
     }
 }
 
-impl<T, R, C> Format<C> for FormatOwnedWithRule<T, R, C>
+impl<'ast, T, R, C> Format<'ast, C> for FormatOwnedWithRule<'ast, T, R, C>
 where
-    R: FormatRule<T, C>,
+    R: FormatRule<'ast, T, C>,
 {
     #[inline(always)]
     fn fmt(&self, f: &mut Formatter<C>) -> FormatResult<()> {
@@ -344,9 +344,9 @@ where
     }
 }
 
-impl<T, R, O, C> FormatOwnedWithRule<T, R, C>
+impl<'ast, T, R, O, C> FormatOwnedWithRule<'ast, T, R, C>
 where
-    R: FormatRuleWithOptions<T, C, Options = O>,
+    R: FormatRuleWithOptions<'ast, T, C, Options = O>,
 {
     pub fn with_options(mut self, options: O) -> Self {
         self.rule = self.rule.with_options(options);
@@ -354,9 +354,9 @@ where
     }
 }
 
-impl<T, R, C> FormatWithRule<C> for FormatOwnedWithRule<T, R, C>
+impl<'ast, T, R, C> FormatWithRule<'ast, C> for FormatOwnedWithRule<'ast, T, R, C>
 where
-    R: FormatRule<T, C>,
+    R: FormatRule<'ast, T, C>,
 {
     type Item = T;
 

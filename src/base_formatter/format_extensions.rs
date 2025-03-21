@@ -55,15 +55,15 @@ pub trait MemoizeFormat<Context> {
     /// # }
     /// ```
     ///
-    fn memoized(self) -> Memoized<Self, Context>
+    fn memoized<'ast>(self) -> Memoized<Self, Context>
     where
-        Self: Sized + Format<Context>,
+        Self: Sized + Format<'ast, Context>,
     {
         Memoized::new(self)
     }
 }
 
-impl<T, Context> MemoizeFormat<Context> for T where T: Format<Context> {}
+impl<'ast, T, Context> MemoizeFormat<Context> for T where T: Format<'ast, Context> {}
 
 /// Memoizes the output of its inner [Format] to avoid re-formatting a potential expensive object.
 #[derive(Debug)]
@@ -73,9 +73,9 @@ pub struct Memoized<F, Context> {
     options: PhantomData<Context>,
 }
 
-impl<F, Context> Memoized<F, Context>
+impl<'ast, F, Context> Memoized<F, Context>
 where
-    F: Format<Context>,
+    F: Format<'ast, Context>,
 {
     fn new(inner: F) -> Self {
         Self {
@@ -153,9 +153,9 @@ where
     }
 }
 
-impl<F, Context> Format<Context> for Memoized<F, Context>
+impl<'ast, F, Context> Format<'ast, Context> for Memoized<F, Context>
 where
-    F: Format<Context>,
+    F: Format<'ast, Context>,
 {
     fn fmt(&self, f: &mut Formatter<Context>) -> FormatResult<()> {
         let result = self.memory.get_or_init(|| f.intern(&self.inner));

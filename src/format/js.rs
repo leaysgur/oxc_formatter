@@ -27,7 +27,7 @@ impl FormatNodeRule<Program<'_>> for FormatProgram {
 
 #[derive(Debug, Clone, Default)]
 pub(crate) struct FormatStatement;
-impl FormatRule<Statement<'_>, JsFormatContext<'_>> for FormatStatement {
+impl FormatRule<'_, Statement<'_>, JsFormatContext<'_>> for FormatStatement {
     fn fmt(&self, node: &Statement, f: &mut JsFormatter) -> FormatResult<()> {
         match node {
             Statement::VariableDeclaration(stmt) => stmt.format().fmt(f),

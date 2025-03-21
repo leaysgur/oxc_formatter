@@ -492,7 +492,7 @@ impl FormatTrailingCommas {
     }
 }
 
-impl Format<JsFormatContext<'_>> for FormatTrailingCommas {
+impl<'ast> Format<'ast, JsFormatContext<'_>> for FormatTrailingCommas {
     fn fmt(&self, f: &mut Formatter<JsFormatContext>) -> FormatResult<()> {
         if f.options().trailing_commas.is_none() {
             return Ok(());

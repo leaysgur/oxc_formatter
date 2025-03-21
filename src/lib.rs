@@ -16,8 +16,8 @@ use crate::context::JsFormatContext;
 pub use crate::context::JsFormatOptions;
 
 /// Used to get an object that knows how to format this object.
-trait AsFormat<Context> {
-    type Format<'a>: crate::base_formatter::Format<Context>
+trait AsFormat<'ast, Context> {
+    type Format<'a>: crate::base_formatter::Format<'ast, Context>
     where
         Self: 'a;
 
@@ -26,9 +26,9 @@ trait AsFormat<Context> {
 }
 
 /// Implement [AsFormat] for references to types that implement [AsFormat].
-impl<T, C> AsFormat<C> for &T
+impl<'ast, T, C> AsFormat<'ast, C> for &T
 where
-    T: AsFormat<C>,
+    T: AsFormat<'ast, C>,
 {
     type Format<'a>
         = T::Format<'a>
@@ -43,9 +43,9 @@ where
 /// Implement [AsFormat] for [Option] when `T` implements [AsFormat]
 ///
 /// Allows to call format on optional AST fields without having to unwrap the field first.
-impl<T, C> AsFormat<C> for Option<T>
+impl<'ast, T, C> AsFormat<'ast, C> for Option<T>
 where
-    T: AsFormat<C>,
+    T: AsFormat<'ast, C>,
 {
     type Format<'a>
         = Option<T::Format<'a>>
@@ -60,8 +60,8 @@ where
 /// Used to convert this object into an object that can be formatted.
 ///
 /// The difference to [AsFormat] is that this trait takes ownership of `self`.
-trait IntoFormat<Context> {
-    type Format: crate::base_formatter::Format<Context>;
+trait IntoFormat<'ast, Context> {
+    type Format: crate::base_formatter::Format<'ast, Context>;
 
     fn into_format(self) -> Self::Format;
 }
@@ -69,9 +69,9 @@ trait IntoFormat<Context> {
 /// Implement [IntoFormat] for [Option] when `T` implements [IntoFormat]
 ///
 /// Allows to call format on optional AST fields without having to unwrap the field first.
-impl<T, Context> IntoFormat<Context> for Option<T>
+impl<'ast, T, Context> IntoFormat<'ast, Context> for Option<T>
 where
-    T: IntoFormat<Context>,
+    T: IntoFormat<'ast, Context>,
 {
     type Format = Option<T::Format>;
 
@@ -83,10 +83,10 @@ where
 /// Formatting specific [Iterator] extensions
 trait FormattedIterExt {
     /// Converts every item to an object that knows how to format it.
-    fn formatted<Context>(self) -> FormattedIter<Self, Self::Item, Context>
+    fn formatted<'ast, Context>(self) -> FormattedIter<'ast, Self, Self::Item, Context>
     where
         Self: Iterator + Sized,
-        Self::Item: IntoFormat<Context>,
+        Self::Item: IntoFormat<'ast, Context>,
     {
         FormattedIter {
             inner: self,
@@ -97,18 +97,18 @@ trait FormattedIterExt {
 
 impl<I> FormattedIterExt for I where I: std::iter::Iterator {}
 
-struct FormattedIter<Iter, Item, Context>
+struct FormattedIter<'ast, Iter, Item, Context>
 where
     Iter: Iterator<Item = Item>,
 {
     inner: Iter,
-    options: std::marker::PhantomData<Context>,
+    options: std::marker::PhantomData<(&'ast (), Context)>,
 }
 
-impl<Iter, Item, Context> std::iter::Iterator for FormattedIter<Iter, Item, Context>
+impl<'ast, Iter, Item, Context> std::iter::Iterator for FormattedIter<'ast, Iter, Item, Context>
 where
     Iter: Iterator<Item = Item>,
-    Item: IntoFormat<Context>,
+    Item: IntoFormat<'ast, Context>,
 {
     type Item = Item::Format;
 
@@ -117,17 +117,17 @@ where
     }
 }
 
-impl<Iter, Item, Context> std::iter::FusedIterator for FormattedIter<Iter, Item, Context>
+impl<'ast, Iter, Item, Context> std::iter::FusedIterator for FormattedIter<'ast, Iter, Item, Context>
 where
     Iter: std::iter::FusedIterator<Item = Item>,
-    Item: IntoFormat<Context>,
+    Item: IntoFormat<'ast, Context>,
 {
 }
 
-impl<Iter, Item, Context> std::iter::ExactSizeIterator for FormattedIter<Iter, Item, Context>
+impl<'ast, Iter, Item, Context> std::iter::ExactSizeIterator for FormattedIter<'ast, Iter, Item, Context>
 where
     Iter: Iterator<Item = Item> + std::iter::ExactSizeIterator,
-    Item: IntoFormat<Context>,
+    Item: IntoFormat<'ast, Context>,
 {
 }
 
@@ -137,11 +137,11 @@ where
 type JsFormatter<'ast, 'buf> = Formatter<'buf, JsFormatContext<'ast>>;
 
 /// Rule for formatting a JavaScript [AstNode].
-trait FormatNodeRule<N>
+trait FormatNodeRule<'ast, N>
 where
     N: oxc_span::GetSpan,
 {
-    fn fmt(&self, node: &N, f: &mut JsFormatter) -> FormatResult<()> {
+    fn fmt(&self, node: &'ast N, f: &mut JsFormatter<'ast, '_>) -> FormatResult<()> {
         if self.is_suppressed(node, f) {
             // TODO
             // return write!(f, [format_suppressed_node(node.syntax())]);
@@ -155,7 +155,7 @@ where
     }
 
     /// Formats the node without comments. Ignores any suppression comments.
-    fn fmt_node(&self, node: &N, f: &mut JsFormatter) -> FormatResult<()> {
+    fn fmt_node(&self, node: &'ast N, f: &mut JsFormatter<'ast, '_>) -> FormatResult<()> {
         let needs_parentheses = self.needs_parentheses(node);
 
         if needs_parentheses {
@@ -172,16 +172,16 @@ where
     }
 
     /// Formats the node's fields.
-    fn fmt_fields(&self, item: &N, f: &mut JsFormatter) -> FormatResult<()>;
+    fn fmt_fields(&self, item: &'ast N, f: &mut JsFormatter<'ast, '_>) -> FormatResult<()>;
 
     /// Returns whether the node requires parens.
-    fn needs_parentheses(&self, item: &N) -> bool {
+    fn needs_parentheses(&self, item: &'ast N) -> bool {
         let _ = item;
         false
     }
 
     /// Returns `true` if the node has a suppression comment and should use the same formatting as in the source document.
-    fn is_suppressed(&self, _node: &N, _f: &JsFormatter) -> bool {
+    fn is_suppressed(&self, _node: &'ast N, _f: &JsFormatter<'ast, '_>) -> bool {
         // f.context().comments().is_suppressed(node.syntax())
         false // TODO
     }
@@ -190,7 +190,7 @@ where
     ///
     /// You may want to override this method if you want to manually handle the formatting of comments
     /// inside of the `fmt_fields` method or customize the formatting of the leading comments.
-    fn fmt_leading_comments(&self, _node: &N, _f: &mut JsFormatter) -> FormatResult<()> {
+    fn fmt_leading_comments(&self, _node: &'ast N, _f: &mut JsFormatter<'ast, '_>) -> FormatResult<()> {
         // format_leading_comments(node.syntax()).fmt(f)
         Ok((/* TODO */))
     }
@@ -202,7 +202,7 @@ where
     /// no comments are dropped.
     ///
     /// A node can have dangling comments if all its children are tokens or if all node childrens are optional.
-    fn fmt_dangling_comments(&self, _node: &N, _f: &mut JsFormatter) -> FormatResult<()> {
+    fn fmt_dangling_comments(&self, _node: &'ast N, _f: &mut JsFormatter<'ast, '_>) -> FormatResult<()> {
         // format_dangling_comments(node.syntax())
         //     .with_soft_block_indent()
         //     .fmt(f)
@@ -213,7 +213,7 @@ where
     ///
     /// You may want to override this method if you want to manually handle the formatting of comments
     /// inside of the `fmt_fields` method or customize the formatting of the trailing comments.
-    fn fmt_trailing_comments(&self, _node: &N, _f: &mut JsFormatter) -> FormatResult<()> {
+    fn fmt_trailing_comments(&self, _node: &'ast N, _f: &mut JsFormatter<'ast, '_>) -> FormatResult<()> {
         // format_trailing_comments(node.syntax()).fmt(f)
         Ok((/* TODO */))
     }
